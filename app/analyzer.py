@@ -1,10 +1,12 @@
 import ast
 from app.misconceptions import detect_misconceptions
+from app.solution_engine import generate_solutions, compare_solutions
 
 def analyze_code(code: str) -> dict:
     """
     Analyzes Python code to count loops, extract variable names,
-    detect coding patterns, and map them to misconceptions.
+    detect coding patterns, map them to misconceptions, and
+    generate/compare alternative solutions.
     """
     # Define our updated response structure
     result = {
@@ -12,6 +14,8 @@ def analyze_code(code: str) -> dict:
         "variables": [],
         "patterns": [],
         "misconceptions": [],
+        "solutions": {},
+        "comparison": {},
         "error": None
     }
 
@@ -54,6 +58,10 @@ def analyze_code(code: str) -> dict:
 
         # Convert the sets back to lists for JSON serialization
         result["variables"] = list(variables)
+        
+        # Run Phase 3: AI Solution Generation and Comparison
+        result["solutions"] = generate_solutions(code)
+        result["comparison"] = compare_solutions(result["solutions"])
         result["patterns"] = list(patterns)
         
         # Run misconception detection

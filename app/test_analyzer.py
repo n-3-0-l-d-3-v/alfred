@@ -79,3 +79,21 @@ def test_analyze_no_false_positive_brute_force():
     assert response.status_code == 200
     data = response.json()
     assert "brute force search" not in data["patterns"]
+
+def test_analyze_solution_engine():
+    """Test Phase 3 AI solution generation and comparison inclusion."""
+    code = "for i in range(10):\n    pass"
+    response = client.post("/analyze", json={"code": code})
+    
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Assert solutions are populated
+    assert "brute_force" in data["solutions"]
+    assert "optimized" in data["solutions"]
+    
+    # Assert proper structure exists inside the solutions
+    assert "time_complexity" in data["solutions"]["optimized"]
+    
+    # Assert comparison was calculated
+    assert data["comparison"]["best"] == "optimized"
