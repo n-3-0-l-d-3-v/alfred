@@ -1,8 +1,9 @@
 import ast
 from app.misconceptions import detect_misconceptions
 from app.solution_engine import generate_solutions, compare_solutions
+from app.teaching_engine import generate_teaching
 
-def analyze_code(code: str) -> dict:
+def analyze_code(code: str, level: str = "beginner") -> dict:
     """
     Analyzes Python code to count loops, extract variable names,
     detect coding patterns, map them to misconceptions, and
@@ -16,6 +17,7 @@ def analyze_code(code: str) -> dict:
         "misconceptions": [],
         "solutions": {},
         "comparison": {},
+        "teaching": {},
         "error": None
     }
 
@@ -66,6 +68,9 @@ def analyze_code(code: str) -> dict:
         
         # Run misconception detection
         result["misconceptions"] = detect_misconceptions(result["patterns"])
+
+        # Run Phase 4: Adaptive Teaching
+        result["teaching"] = generate_teaching(result["misconceptions"], result["solutions"], level)
 
     except SyntaxError as e:
         # If the code contains invalid Python syntax, record it as an error string

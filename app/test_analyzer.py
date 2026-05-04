@@ -97,3 +97,36 @@ def test_analyze_solution_engine():
     
     # Assert comparison was calculated
     assert data["comparison"]["best"] == "optimized"
+
+def test_teaching_engine_beginner():
+    """Test adaptive teaching for beginner level."""
+    code = "for i in range(5):\n    for j in range(5):\n        pass"
+    response = client.post("/analyze", json={"code": code, "level": "beginner"})
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "teaching" in data
+    assert data["teaching"]["level"] == "beginner"
+    # Ensure it's using simple language (no Big-O notation)
+    assert "O(N^2)" not in data["teaching"]["feedback"][0]["explanation"]
+
+def test_teaching_engine_intermediate():
+    """Test adaptive teaching for intermediate level."""
+    code = "for i in range(5):\n    for j in range(5):\n        pass"
+    response = client.post("/analyze", json={"code": code, "level": "intermediate"})
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "teaching" in data
+    assert data["teaching"]["level"] == "intermediate"
+    # Ensure it's using technical language (Big-O notation)
+    assert "O(" in data["teaching"]["feedback"][0]["hint"] or "O(" in data["teaching"]["feedback"][0]["explanation"] or "O(" in data["teaching"]["feedback"][0]["next_step"]
+
+def test_teaching_engine_no_issue():
+    """Test adaptive teaching when code has no detected issues."""
+    code = "x = 10"
+    response = client.post("/analyze", json={"code": code})
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "Great job" in data["teaching"]["feedback"][0]["hint"]
