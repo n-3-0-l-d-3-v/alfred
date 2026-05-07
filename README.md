@@ -11,3 +11,5 @@ leetlearn will never provide the solution to you it will make you find a way out
 initial plan as a learning trainer  alongide leetcode for dev
 
 future scope enhanced professional code reviewer support for ai tools to check if the code is well generated or if it is just ai slop
+
+need to finihs this fast
