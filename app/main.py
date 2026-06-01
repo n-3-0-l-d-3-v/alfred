@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from typing import Literal
 
 # Import our custom logic from analyzer.py
 from app.analyzer import analyze_code
@@ -10,7 +11,7 @@ app = FastAPI(title="Coding Mentor API")
 # Define the expected JSON input structure
 class CodeInput(BaseModel):
     code: str
-    level: str = "beginner"
+    level: Literal["beginner", "intermediate"] = "beginner"
 
 # Define a POST endpoint at /analyze
 @app.post("/analyze")

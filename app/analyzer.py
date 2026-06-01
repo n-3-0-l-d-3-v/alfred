@@ -2,6 +2,8 @@ import ast
 from app.misconceptions import detect_misconceptions
 from app.solution_engine import generate_solutions, compare_solutions
 from app.teaching_engine import generate_teaching
+from app.emotion_engine import get_emotion
+from app.meme_engine import generate_memes
 
 def analyze_code(code: str, level: str = "beginner") -> dict:
     """
@@ -18,6 +20,8 @@ def analyze_code(code: str, level: str = "beginner") -> dict:
         "solutions": {},
         "comparison": {},
         "teaching": {},
+        "emotion": None,
+        "memes": [],
         "error": None
     }
 
@@ -71,6 +75,10 @@ def analyze_code(code: str, level: str = "beginner") -> dict:
 
         # Run Phase 4: Adaptive Teaching
         result["teaching"] = generate_teaching(result["misconceptions"], result["solutions"], level)
+
+        # Run Phase 5: Emotion + Meme Engine
+        result["emotion"] = get_emotion(result, result["misconceptions"])
+        result["memes"] = generate_memes(result["patterns"], result["emotion"])
 
     except SyntaxError as e:
         # If the code contains invalid Python syntax, record it as an error string

@@ -130,3 +130,33 @@ def test_teaching_engine_no_issue():
     assert response.status_code == 200
     data = response.json()
     assert "Great job" in data["teaching"]["feedback"][0]["hint"]
+
+def test_emotion_engine_praise():
+    """Clean code should yield a praise emotion."""
+    code = "x = 1\ny = x + 2"
+    response = client.post("/analyze", json={"code": code})
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["emotion"] == "praise"
+    assert data["memes"] == []
+
+def test_emotion_engine_mentor():
+    """Minor inefficiency should yield a mentor emotion."""
+    code = "target = 5\nfor num in [1, 2, 3, 4, 5]:\n    if num == target:\n        break"
+    response = client.post("/analyze", json={"code": code})
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["emotion"] == "mentor"
+    assert isinstance(data["memes"], list)
+
+def test_emotion_engine_sarcastic():
+    """Major inefficiency should yield a sarcastic emotion."""
+    code = "for i in range(5):\n    for j in range(5):\n        pass"
+    response = client.post("/analyze", json={"code": code})
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["emotion"] == "sarcastic"
+    assert isinstance(data["memes"], list)
