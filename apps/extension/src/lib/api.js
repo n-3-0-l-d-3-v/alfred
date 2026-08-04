@@ -48,6 +48,25 @@ LL.api = (function () {
     setBase: (b) => LL.storage.set({ apiBase: b }),
     getBase: base,
     health: () => call("/health", { auth: false }),
+    /**
+     * GitHub sign-in. The extension only ever handles the short-lived OAuth
+     * code and the JWT that comes back — the client secret stays on the server.
+     */
+    loginWithGithub: async () => {
+      const { auth } = await call("/health", { auth: false });
+      if (!auth?.github) throw new Error("This server doesn't have GitHub sign-in configured.");
+
+      const code = await LL.identity.getGithubCode(auth.github_client_id);
+      const r = await call("/auth/github", {
+        method: "POST",
+        body: { code, redirect_uri: LL.identity.redirectUri() },
+        auth: false,
+      });
+      await LL.storage.set({ token: r.token, userId: r.user_id, handle: r.handle, avatarUrl: r.avatar_url });
+      return r;
+    },
+
+    /** Local-development sign-in. Only works when the server enables it. */
     login: async (email) => {
       const r = await call("/auth/dev-login", { method: "POST", body: { email }, auth: false });
       await LL.storage.set({ token: r.token, userId: r.user_id, email });

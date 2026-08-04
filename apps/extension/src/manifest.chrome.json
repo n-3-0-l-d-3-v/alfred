@@ -6,7 +6,8 @@
   "permissions": [
     "storage",
     "tabs",
-    "sidePanel"
+    "sidePanel",
+    "identity"
   ],
   "host_permissions": [
     "https://leetcode.com/problems/*",

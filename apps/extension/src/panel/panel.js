@@ -307,6 +307,32 @@
       t.addEventListener("click", () => switchTab(t.dataset.tab));
     }
 
+    // The dev sign-in form only appears if the server actually accepts it, so
+    // a deployed build shows GitHub alone.
+    try {
+      const { auth } = await LL.api.health();
+      $("devAuth").classList.toggle("hidden", !auth?.dev);
+      $("signinGithub").classList.toggle("hidden", !auth?.github);
+      if (!auth?.github && !auth?.dev) {
+        $("authError").textContent = "This server has no sign-in method configured.";
+      }
+    } catch (_) {
+      // Server unreachable — leave both visible; the attempt will report why.
+    }
+
+    $("signinGithub").addEventListener("click", async () => {
+      $("authError").textContent = "";
+      $("signinGithub").disabled = true;
+      try {
+        await LL.api.loginWithGithub();
+        boot();
+      } catch (e) {
+        $("authError").textContent = e.message;
+      } finally {
+        $("signinGithub").disabled = false;
+      }
+    });
+
     $("signin").addEventListener("click", async () => {
       $("authError").textContent = "";
       const email = $("email").value.trim();

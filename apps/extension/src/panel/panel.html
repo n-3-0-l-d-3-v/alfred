@@ -17,9 +17,15 @@
 
     <!-- signed out -->
     <section id="auth" class="pane hidden">
-      <p class="muted">Sign in to start. Dev build — any email works.</p>
-      <input id="email" type="email" placeholder="you@example.com" />
-      <button id="signin" class="primary">Sign in</button>
+      <p class="muted">Sign in to keep your streak, XP and progress.</p>
+      <button id="signinGithub" class="primary">Continue with GitHub</button>
+
+      <!-- Shown only when the server reports dev auth is enabled. -->
+      <div id="devAuth" class="hidden">
+        <p class="muted small">Local dev sign-in — any email works.</p>
+        <input id="email" type="email" placeholder="you@example.com" />
+        <button id="signin">Sign in</button>
+      </div>
 
       <details class="settings">
         <summary>Server settings</summary>
