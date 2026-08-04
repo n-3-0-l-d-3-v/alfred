@@ -1,6 +1,10 @@
 """Database engine + session factory. SQLite for local dev, Postgres in prod
-(swap `LEETLEARN_DATABASE_URL`). `init_db` creates tables for the dev slice;
-production uses Alembic migrations (Phase 0 completion item).
+(swap `LEETLEARN_DATABASE_URL`).
+
+Schema management is Alembic (`alembic upgrade head`). `init_db` remains only
+as a convenience for SQLite dev and the test suite: `create_all` silently skips
+tables that already exist, so on a real database it would let a schema drift
+away from the migration history without anyone noticing.
 """
 
 from __future__ import annotations
@@ -23,7 +27,12 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False
 
 
 def init_db() -> None:
+    """Create tables directly. Only safe where migrations aren't in play."""
     Base.metadata.create_all(bind=engine)
+
+
+def is_sqlite() -> bool:
+    return _settings.database_url.startswith("sqlite")
 
 
 def get_db() -> Iterator[Session]:
