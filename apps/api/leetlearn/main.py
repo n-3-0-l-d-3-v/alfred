@@ -138,12 +138,36 @@ def analyze_code(body: AnalyzeIn, user: User = Depends(current_user)) -> dict:
 
 @app.post("/sessions")
 def start_session(body: StartSession, user: User = Depends(current_user), db: DbSession = Depends(get_db)) -> dict:
+    """Open (or resume) this user's session for a problem.
+
+    Resuming rather than always inserting is what makes the AC gate and the hint
+    counter mean anything: a fresh row per panel-open would reset `hints_used`
+    and re-lock a problem the learner already solved, so closing the sidebar
+    would launder a hinted solve into a clean one.
+    """
     if cards.get(body.slug) is None:
         raise HTTPException(404, f"no problem card for '{body.slug}' yet (KB covers {cards.slugs()})")
-    s = Session(user_id=user.id, slug=body.slug, language=body.language)
-    db.add(s)
+
+    s = db.scalar(
+        select(Session)
+        .where(Session.user_id == user.id, Session.slug == body.slug)
+        .order_by(Session.id.desc())
+    )
+    if s is None:
+        s = Session(user_id=user.id, slug=body.slug, language=body.language)
+        db.add(s)
+    elif s.language != body.language:
+        s.language = body.language  # they switched language mid-problem
     db.commit()
-    return {"session_id": s.id, "slug": s.slug, "language": s.language, "solved": s.solved}
+
+    return {
+        "session_id": s.id,
+        "slug": s.slug,
+        "language": s.language,
+        "solved": s.solved,
+        "hints_used": s.hints_used,
+        "resumed": s.hints_used > 0 or s.solved,
+    }
 
 
 def _load_session(session_id: int, user: User, db: DbSession) -> Session:
