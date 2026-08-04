@@ -14,11 +14,11 @@ full architecture, cost model, and phased roadmap.
 
 | Phase | | |
 |---|---|---|
-| 0 — Foundation | 🟢 mostly done | API, DB, config, tests, build tooling. Real auth + Alembic remain. |
-| 1 — The brain | 🟢 mostly done | 5-language parsing, AC gate, personas, memes, failure gallery, offline review. Claude wiring + Top-150 card KB remain. |
+| 0 — Foundation | 🟢 done | API, GitHub OAuth → JWT, Alembic migrations, Postgres, Docker, Fly config, CI-ready tests. |
+| 1 — The brain | 🟡 in progress | 5-language parsing, AC gate, personas, memes, failure gallery, offline review all done. **The card KB is still only 2 problems** — the archetype engine and NeetCode 150 are the active work. |
 | 2 — Extension MVP | 🟡 built, needs live validation | Chrome + Firefox builds load; DOM selectors need checking against real LeetCode. |
 
-**67 tests green** — 53 Python + 14 JavaScript.
+**89 tests green** — 75 Python + 14 JavaScript.
 
 **What works end to end today** (no API key needed): sign in → open a LeetCode
 problem → Socratic hint ladder L1–L4 → the AC gate blocks the full solution →
@@ -26,13 +26,28 @@ pass a submission → approaches, a five-persona code review, complexity
 breakdown, a concrete "what would have gone wrong" gallery, memes, XP and streaks.
 
 ```bash
-# backend
-cd apps/api && python -m venv .venv && .venv\Scripts\activate
-pip install -r requirements.txt && pytest -q && uvicorn leetlearn.main:app --reload
+cd apps/api && python -m venv .venv && .venv\Scripts\activate && pip install -r requirements.txt
+```
 
-# extension (no npm needed)
+Set two env vars (a `.env` in `apps/api/` works) — the server fails closed
+without them, by design:
+
+```bash
+LEETLEARN_JWT_SECRET=<python -c "import secrets; print(secrets.token_urlsafe(32))">
+LEETLEARN_DEV_AUTH_ENABLED=true
+```
+
+```bash
+cd apps/api && pytest -q && alembic upgrade head && uvicorn leetlearn.main:app --reload
+```
+
+```bash
 cd apps/extension && python build.py
 ```
+
+For GitHub sign-in, register an OAuth app whose callback is the value of
+`chrome.identity.getRedirectURL()` and set `LEETLEARN_GITHUB_CLIENT_ID` /
+`LEETLEARN_GITHUB_CLIENT_SECRET`. Postgres locally: `docker compose up`.
 
 Then load `apps/extension/dist/chrome` (or `dist/firefox`) — see
 [apps/extension/README.md](apps/extension/README.md).
