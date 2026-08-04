@@ -89,6 +89,10 @@ class XpEvent(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     kind: Mapped[str] = mapped_column(String(32))
     amount: Mapped[int] = mapped_column()
+    # Which problem earned this. Solve XP is awarded once per (user, slug) —
+    # sessions are cheap to create, so per-session idempotence alone would let a
+    # learner re-collect the clean-solve bonus by reopening the panel.
+    slug: Mapped[str | None] = mapped_column(String(128), index=True, default=None)
     at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
 
 

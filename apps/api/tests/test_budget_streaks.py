@@ -72,6 +72,42 @@ def test_clean_solve_awards_more_than_hinted(db, user, service):
     assert r2["clean"] is False
 
 
+def test_solve_xp_is_awarded_once_per_problem_not_per_session(db, user, service):
+    """A second session on the same problem must not pay out again.
+
+    This is the XP-farming path: sessions are free to create, so per-session
+    idempotence alone would let a learner re-collect the 50-XP clean-solve bonus
+    by closing and reopening the panel on a problem they'd already finished.
+    """
+    first = _solved_session(db, user, "two-sum")
+    assert progress.on_verdict(db, user, first, "Accepted")["xp_awarded"] == 50
+
+    second = _solved_session(db, user, "two-sum")  # simulates a stray new session
+    result = progress.on_verdict(db, user, second, "Accepted")
+
+    assert result["xp_awarded"] == 0
+    assert result["repeat_solve"] is True
+    assert result["solved"] is True  # still unlocks the post-AC surface
+    assert progress.total_xp(db, user.id) == 50
+
+
+def test_hinted_solve_cannot_be_laundered_into_a_clean_one(db, user, service):
+    """Reopening the panel must not reset the hint counter.
+
+    Without session reuse a learner could take four hints, close the sidebar,
+    reopen it onto a fresh zero-hint session, and submit for the full clean-solve
+    bonus — which would make "solved clean" meaningless as a signal.
+    """
+    s = _solved_session(db, user, "two-sum")
+    service.get_hint(db, user, s, 1)
+    service.get_hint(db, user, s, 2)
+    assert s.hints_used == 2
+
+    resumed = progress.on_verdict(db, user, s, "Accepted")
+    assert resumed["clean"] is False
+    assert resumed["xp_awarded"] == 30
+
+
 def test_resolve_is_idempotent(db, user):
     s = _solved_session(db, user)
     first = progress.on_verdict(db, user, s, "Accepted")

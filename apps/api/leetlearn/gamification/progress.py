@@ -13,12 +13,33 @@ CLEAN_SOLVE_XP = 50
 HINT_PENALTY = 10
 MIN_SOLVE_XP = 10
 
+# XP kinds that represent "you finished this problem", as opposed to future
+# non-solve awards (daily goal, streak milestones) which may repeat per slug.
+SOLVE_KINDS = ("solve_clean", "solve_hinted")
+
+
+def already_scored(db: DbSession, user_id: int, slug: str) -> bool:
+    """Has this user ever been awarded solve XP for this problem?
+
+    The AC gate itself is per-session, which is correct — each attempt at a
+    problem earns its own teaching surface. Scoring is not: a session row costs
+    nothing to create, so without a per-(user, slug) check a learner could
+    re-collect the clean-solve bonus indefinitely by reopening the panel on a
+    problem they already finished.
+    """
+    stmt = select(XpEvent.id).where(
+        XpEvent.user_id == user_id,
+        XpEvent.slug == slug,
+        XpEvent.kind.in_(SOLVE_KINDS),
+    ).limit(1)
+    return db.execute(stmt).first() is not None
+
 
 def on_verdict(db: DbSession, user: User, session: Session, verdict: str) -> dict:
     """Process a submission verdict. Returns a summary for the client.
 
-    Only the first Accepted verdict for a session flips `solved_at` and awards XP;
-    re-submitting an already-solved problem is a no-op for scoring.
+    Only the first Accepted verdict for a session flips `solved_at`, and solve
+    XP is awarded at most once per (user, problem) across all sessions.
     """
     accepted = verdict.strip().lower() in {"accepted", "ac", "pass", "passed"}
 
@@ -30,9 +51,22 @@ def on_verdict(db: DbSession, user: User, session: Session, verdict: str) -> dic
 
     session.solved_at = utcnow()
     clean = session.hints_used == 0
-    xp = CLEAN_SOLVE_XP if clean else max(MIN_SOLVE_XP, CLEAN_SOLVE_XP - HINT_PENALTY * session.hints_used)
 
-    db.add(XpEvent(user_id=user.id, kind="solve_clean" if clean else "solve_hinted", amount=xp))
+    # Re-solving a problem still unlocks the post-AC surface and still counts as
+    # activity for the streak — it just doesn't pay out again.
+    repeat = already_scored(db, user.id, session.slug)
+    xp = 0 if repeat else (
+        CLEAN_SOLVE_XP if clean
+        else max(MIN_SOLVE_XP, CLEAN_SOLVE_XP - HINT_PENALTY * session.hints_used)
+    )
+
+    if xp:
+        db.add(XpEvent(
+            user_id=user.id,
+            kind="solve_clean" if clean else "solve_hinted",
+            amount=xp,
+            slug=session.slug,
+        ))
     s = streaks.touch(db, user.id)
     db.commit()
 
@@ -40,6 +74,7 @@ def on_verdict(db: DbSession, user: User, session: Session, verdict: str) -> dic
         "solved": True,
         "accepted": True,
         "clean": clean,
+        "repeat_solve": repeat,
         "hints_used": session.hints_used,
         "xp_awarded": xp,
         "streak_current": s.current,
