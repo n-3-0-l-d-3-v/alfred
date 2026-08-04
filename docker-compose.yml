@@ -1,0 +1,35 @@
+# Local development against Postgres, so you exercise the same database engine
+# the deployment uses. Plain `uvicorn` on SQLite still works for quick runs —
+# see apps/api/README.md.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: leetlearn
+      POSTGRES_PASSWORD: leetlearn
+      POSTGRES_DB: leetlearn
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leetlearn"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./apps/api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      LEETLEARN_DATABASE_URL: postgresql+psycopg://leetlearn:leetlearn@db:5432/leetlearn
+      # Local-only values. The deployed app gets these from Fly secrets.
+      LEETLEARN_JWT_SECRET: local-development-secret-do-not-use-in-production
+      LEETLEARN_DEV_AUTH_ENABLED: "true"
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
