@@ -41,8 +41,32 @@ class Settings(BaseSettings):
     daily_solve_goal: int = 1
     streak_freezes_default: int = 2
 
-    # --- auth (dev stub; replace with magic-link/OAuth->JWT in Phase 0 completion) ---
-    dev_auth_enabled: bool = True
+    # --- auth ---
+    # GitHub OAuth -> signed JWT. The extension drives the browser half via
+    # chrome.identity.launchWebAuthFlow; the secret never leaves the server.
+    github_client_id: str | None = None
+    github_client_secret: str | None = None
+    jwt_secret: str | None = None
+    jwt_ttl_days: int = 30
+
+    # The dev bypass (`Bearer llt_<user_id>`) accepts any user id with no proof
+    # of identity — it is an impersonation hole by construction. It therefore
+    # defaults OFF and must be switched on deliberately for local work; a
+    # deployment that forgets to configure auth fails closed rather than open.
+    dev_auth_enabled: bool = False
+
+    # --- CORS ---
+    # Comma-separated. Extension origins are matched by regex in main.py instead,
+    # since their ids differ per install; this list is for the web dashboard.
+    cors_origins: str = "http://localhost:5173,http://localhost:8000"
+
+    @property
+    def github_oauth_configured(self) -> bool:
+        return bool(self.github_client_id and self.github_client_secret)
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
 
 @lru_cache

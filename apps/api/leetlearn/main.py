@@ -1,21 +1,22 @@
-"""FastAPI surface for the LeetLearn dev slice.
+"""FastAPI surface for LeetLearn.
 
-Auth here is a DEV STUB (token == "llt_<user_id>"); replace with magic-link or
-OAuth->JWT for the Phase 0 completion milestone. Everything else — the AC gate,
-budgets, streaks, offline review — is the real implementation.
+Auth is GitHub OAuth -> signed JWT (see `auth.py`); the `llt_<user_id>` dev
+bypass survives only for local work and is off by default.
 """
 
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
 from .analysis import analyze
 from .analysis.registry import supported_languages
+from .auth import AuthError, current_user, exchange_github_code, issue_token, upsert_github_user
 from .config import get_settings
 from .db import get_db, init_db
 from .gamification import budget, progress, streaks
@@ -38,23 +39,16 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="LeetLearn API", version="0.1.0", lifespan=lifespan)
 
-
-# --- auth (dev stub) ---------------------------------------------------------
-
-
-def current_user(
-    authorization: str | None = Header(default=None), db: DbSession = Depends(get_db)
-) -> User:
-    if not authorization or not authorization.startswith("Bearer llt_"):
-        raise HTTPException(401, "missing or malformed dev token (expected 'Bearer llt_<id>')")
-    try:
-        user_id = int(authorization.removeprefix("Bearer llt_"))
-    except ValueError:
-        raise HTTPException(401, "bad dev token")
-    user = db.get(User, user_id)
-    if user is None:
-        raise HTTPException(401, "unknown user")
-    return user
+# The extension panel is an extension-origin page calling a different host, so
+# it needs CORS. Origins are explicit rather than "*" — an allow-all API that
+# accepts Authorization headers is an open door for any site the user visits.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_origin_regex=r"^(chrome-extension|moz-extension)://[a-z0-9-]+$",
+    allow_methods=["GET", "POST"],
+    allow_headers=["authorization", "content-type"],
+)
 
 
 # --- request bodies ----------------------------------------------------------
@@ -64,6 +58,10 @@ class DevLogin(BaseModel):
     email: str
     handle: str | None = None
 
+
+class GithubLogin(BaseModel):
+    code: str
+    redirect_uri: str | None = None
 
 
 class StartSession(BaseModel):
@@ -111,13 +109,36 @@ def health() -> dict:
         "llm": "online" if mentor.available else "offline",
         "languages": supported_languages(),
         "personas": [p["key"] for p in personas.catalog()],
+        # The panel reads these to decide which sign-in buttons to render.
+        "auth": {
+            "github": settings.github_oauth_configured,
+            "dev": settings.dev_auth_enabled,
+            "github_client_id": settings.github_client_id,
+        },
     }
+
+
+@app.post("/auth/github")
+async def github_login(body: GithubLogin, db: DbSession = Depends(get_db)) -> dict:
+    """Exchange a GitHub OAuth code for a LeetLearn JWT."""
+    try:
+        profile = await exchange_github_code(body.code, body.redirect_uri, settings)
+        user = upsert_github_user(db, profile)
+        return {
+            "user_id": user.id,
+            "token": issue_token(user, settings),
+            "handle": user.handle,
+            "avatar_url": user.avatar_url,
+        }
+    except AuthError as e:
+        raise HTTPException(401, str(e))
 
 
 @app.post("/auth/dev-login")
 def dev_login(body: DevLogin, db: DbSession = Depends(get_db)) -> dict:
+    """Local-development sign-in. Disabled unless `dev_auth_enabled` is set."""
     if not settings.dev_auth_enabled:
-        raise HTTPException(403, "dev auth disabled")
+        raise HTTPException(403, "dev auth is disabled on this server — sign in with GitHub")
     user = db.scalar(select(User).where(User.email == body.email))
     if user is None:
         user = User(email=body.email, handle=body.handle)
@@ -128,7 +149,14 @@ def dev_login(body: DevLogin, db: DbSession = Depends(get_db)) -> dict:
 
 @app.get("/me")
 def me(user: User = Depends(current_user)) -> dict:
-    return {"id": user.id, "email": user.email, "handle": user.handle, "tone": user.tone, "skill_level": user.skill_level}
+    return {
+        "id": user.id,
+        "email": user.email,
+        "handle": user.handle,
+        "avatar_url": user.avatar_url,
+        "tone": user.tone,
+        "skill_level": user.skill_level,
+    }
 
 
 @app.post("/analyze")

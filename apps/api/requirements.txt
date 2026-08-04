@@ -6,6 +6,12 @@ pydantic-settings>=2.2
 anthropic>=0.40
 pytest>=8.0
 httpx>=0.27
+pyjwt>=2.8
+alembic>=1.13
+
+# Postgres driver. SQLite needs nothing extra, so local dev works without it,
+# but a deployed LEETLEARN_DATABASE_URL of postgresql+psycopg://... requires it.
+psycopg[binary]>=3.1
 
 # Multi-language static analysis. Optional at runtime — if these are missing,
 # Python analysis still works and other languages degrade to an honest
