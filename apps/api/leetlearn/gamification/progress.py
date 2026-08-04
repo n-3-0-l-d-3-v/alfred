@@ -3,12 +3,10 @@ solves are worth more than hinted ones), and advance the streak."""
 
 from __future__ import annotations
 
-from datetime import datetime
-
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session as DbSession
 
-from ..models import Session, User, XpEvent
+from ..models import Session, User, XpEvent, utcnow
 from . import streaks
 
 CLEAN_SOLVE_XP = 50
@@ -30,7 +28,7 @@ def on_verdict(db: DbSession, user: User, session: Session, verdict: str) -> dic
     if session.solved:
         return {"solved": True, "accepted": True, "xp_awarded": 0, "already_solved": True}
 
-    session.solved_at = datetime.now()
+    session.solved_at = utcnow()
     clean = session.hints_used == 0
     xp = CLEAN_SOLVE_XP if clean else max(MIN_SOLVE_XP, CLEAN_SOLVE_XP - HINT_PENALTY * session.hints_used)
 

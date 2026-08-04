@@ -1,10 +1,10 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
 from leetlearn.gamification import budget, progress, streaks
 from leetlearn.mentor.service import BudgetError
-from leetlearn.models import Session
+from leetlearn.models import HintEvent, Session
 
 
 def _solved_session(db, user, slug="two-sum"):
@@ -23,6 +23,39 @@ def test_card_hint_cap_enforced(db, user, service, monkeypatch):
     assert budget.remaining(db, user.id, "card", 3) == 0
     with pytest.raises(BudgetError):
         service.get_hint(db, user, s, 1)
+
+
+def test_hint_events_are_stamped_in_utc(db, user):
+    """Half one of the cost fence: rows are written on the UTC clock.
+
+    This assertion is timezone-independent — it fails on *any* machine if the
+    column default ever goes back to a local-time clock, rather than only on
+    machines whose offset happens to expose it.
+    """
+    db.add(HintEvent(user_id=user.id, session_id=1, level=1, source="card", cost=0))
+    db.commit()
+    ev = db.query(HintEvent).one()
+    drift = abs(ev.at - datetime.now(timezone.utc).replace(tzinfo=None))
+    assert drift < timedelta(minutes=1), f"hint_events.at is not on the UTC clock (drift {drift})"
+
+
+def test_budget_day_boundary_is_utc_not_local(db, user, monkeypatch):
+    """Half two: the cap counts against a UTC midnight.
+
+    Pinned at 22:30 UTC — a moment that is already *tomorrow* in any timezone
+    ahead of UTC+02:00. Under the old local-midnight boundary an event written
+    seconds ago sorted as "yesterday" and the cap counted zero, so the daily
+    limit stopped applying for the first offset-hours of every local day.
+    """
+    now = datetime(2026, 8, 3, 22, 30)
+    monkeypatch.setattr(budget, "utcnow", lambda: now)
+
+    db.add(HintEvent(user_id=user.id, session_id=1, level=1, source="card", cost=0, at=now - timedelta(minutes=1)))
+    db.add(HintEvent(user_id=user.id, session_id=1, level=1, source="card", cost=0, at=now - timedelta(hours=25)))
+    db.commit()
+
+    assert budget.used_today(db, user.id, "card") == 1
+    assert budget.remaining(db, user.id, "card", 3) == 2
 
 
 def test_clean_solve_awards_more_than_hinted(db, user, service):
