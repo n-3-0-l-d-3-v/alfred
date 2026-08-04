@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LeetLearn</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <header id="top">
+      <div class="brand">
+        <span class="logo">◈</span>
+        <span>LeetLearn</span>
+      </div>
+      <div id="streak" class="streak" title="Streak / XP"></div>
+    </header>
+
+    <!-- signed out -->
+    <section id="auth" class="pane hidden">
+      <p class="muted">Sign in to start. Dev build — any email works.</p>
+      <input id="email" type="email" placeholder="you@example.com" />
+      <button id="signin" class="primary">Sign in</button>
+
+      <details class="settings">
+        <summary>Server settings</summary>
+        <input id="apiBase" type="text" placeholder="http://localhost:8000" />
+        <button id="saveBase">Save</button>
+      </details>
+      <p id="authError" class="error"></p>
+    </section>
+
+    <!-- not on a problem page -->
+    <section id="notProblem" class="pane hidden">
+      <p class="muted">Open a LeetCode problem to get started.</p>
+      <p class="muted small">LeetLearn activates on <code>leetcode.com/problems/…</code></p>
+    </section>
+
+    <!-- main -->
+    <section id="main" class="pane hidden">
+      <div id="problemBar" class="problem-bar"></div>
+
+      <nav class="tabs">
+        <button class="tab active" data-tab="understand">Understand</button>
+        <button class="tab" data-tab="hints">Hints</button>
+        <button class="tab" data-tab="review">Review</button>
+        <button class="tab" data-tab="progress">You</button>
+      </nav>
+
+      <!-- UNDERSTAND -->
+      <div class="tabpane" id="tab-understand">
+        <div id="understandBody" class="loading">Loading…</div>
+      </div>
+
+      <!-- HINTS -->
+      <div class="tabpane hidden" id="tab-hints">
+        <div class="gate-note" id="gateNote">
+          Hints stay Socratic until you pass. The full solution unlocks after a
+          passing submission — that's the whole point.
+        </div>
+        <div id="hintList"></div>
+        <button id="nextHint" class="primary">Give me a nudge</button>
+        <div id="hintMeta" class="muted small"></div>
+        <div id="hintError" class="error"></div>
+      </div>
+
+      <!-- REVIEW -->
+      <div class="tabpane hidden" id="tab-review">
+        <div id="reviewLocked" class="locked">
+          <p><strong>Locked until you pass.</strong></p>
+          <p class="muted small">
+            Solve it first — then you get every approach, the complexity
+            breakdown, and what would have gone wrong.
+          </p>
+        </div>
+        <div id="reviewBody" class="hidden">
+          <div class="persona-row">
+            <label for="persona">Voice</label>
+            <select id="persona"></select>
+            <button id="rerun" class="ghost">Re-run</button>
+          </div>
+          <div id="reviewOut"></div>
+        </div>
+      </div>
+
+      <!-- PROGRESS -->
+      <div class="tabpane hidden" id="tab-progress">
+        <div id="progressBody" class="loading">Loading…</div>
+        <button id="signout" class="ghost">Sign out</button>
+      </div>
+    </section>
+
+    <script src="../lib/ext.js"></script>
+    <script src="../lib/api.js"></script>
+    <script src="panel.js"></script>
+  </body>
+</html>

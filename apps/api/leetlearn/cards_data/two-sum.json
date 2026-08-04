@@ -1,0 +1,89 @@
+{
+  "slug": "two-sum",
+  "title": "Two Sum",
+  "difficulty": "Easy",
+  "topics": ["array", "hash-table"],
+  "patterns": [
+    { "name": "Hash Map (complement lookup)", "confidence": 0.9 },
+    { "name": "Two Pointers (only if sorted)", "confidence": 0.3 },
+    { "name": "Brute Force", "confidence": 0.2 }
+  ],
+  "understanding": "You're given a list of numbers and a target. Find the two positions whose values add up to the target. Exactly one such pair exists, and you can't reuse the same element twice.",
+  "hint_ladder": {
+    "l1": "As you look at each number, what single other number would you need to have already seen to finish the pair? If you could recognize that number instantly, the problem would be over.",
+    "l2": "For a value x, its partner must be target minus x. So the real question each step is: have I already come across the partner this value needs?",
+    "l3": "The slow part is searching the earlier numbers again and again. Is there a structure that answers 'have I seen this value, and where was it?' in a single step rather than a scan?",
+    "l4": "Make one pass. For the current value, first ask whether its needed partner is already recorded; if it is, you have your answer. Otherwise record where this value lives and move on."
+  },
+  "approaches": [
+    {
+      "name": "Brute force (double loop)",
+      "idea": "Try every pair of indices and check whether they sum to target.",
+      "time": "O(n^2)",
+      "space": "O(1)",
+      "code": "def twoSum(nums, target):\n    for i in range(len(nums)):\n        for j in range(i + 1, len(nums)):\n            if nums[i] + nums[j] == target:\n                return [i, j]"
+    },
+    {
+      "name": "One-pass hash map",
+      "idea": "Store value to index as you go; before storing, check if the complement is already present.",
+      "time": "O(n)",
+      "space": "O(n)",
+      "code": "def twoSum(nums, target):\n    seen = {}\n    for i, x in enumerate(nums):\n        need = target - x\n        if need in seen:\n            return [seen[need], i]\n        seen[x] = i"
+    },
+    {
+      "name": "Sort + two pointers",
+      "idea": "Sort (tracking original indices), then walk two pointers inward. Loses O(1) space unless you can mutate, and needs index bookkeeping.",
+      "time": "O(n log n)",
+      "space": "O(n)",
+      "code": "def twoSum(nums, target):\n    idx = sorted(range(len(nums)), key=lambda i: nums[i])\n    lo, hi = 0, len(nums) - 1\n    while lo < hi:\n        s = nums[idx[lo]] + nums[idx[hi]]\n        if s == target:\n            return [idx[lo], idx[hi]]\n        if s < target:\n            lo += 1\n        else:\n            hi -= 1"
+    }
+  ],
+  "complexity": { "target_time": "O(n)", "target_space": "O(n)", "brute_time": "O(n^2)" },
+  "pitfalls": [
+    { "mistake": "Using the same element twice", "why": "x + x == target passes if you don't require distinct indices", "symptom": "Wrong answer on inputs like nums=[3,4], target=6" },
+    { "mistake": "Returning the values instead of the indices", "why": "The problem asks for positions", "symptom": "Wrong-answer verdict even though the pair is correct" },
+    { "mistake": "Storing before checking", "why": "You can match a value against itself", "symptom": "Off cases with duplicates or x == target - x" }
+  ],
+  "verified": true,
+  "failure_cases": [
+    {
+      "mistake": "Storing the current value before checking for its complement",
+      "trigger": "nums = [3, 2, 4], target = 6",
+      "expected": "[1, 2]  (2 + 4)",
+      "actual": "[0, 0]  — matches 3 with itself",
+      "why": "You write nums[i] into the map first, so the very next lookup finds the element you just inserted. Check, then store."
+    },
+    {
+      "mistake": "Not handling duplicate values",
+      "trigger": "nums = [3, 3], target = 6",
+      "expected": "[0, 1]",
+      "actual": "[0, 0] or a missed pair",
+      "why": "If the map is keyed by value, the second 3 overwrites the first. Order of check-then-store is what saves you here."
+    },
+    {
+      "mistake": "Returning the values instead of the indices",
+      "trigger": "nums = [2, 7, 11, 15], target = 9",
+      "expected": "[0, 1]",
+      "actual": "[2, 7]",
+      "why": "You found the right pair, but the judge compares index arrays. Correct reasoning, wrong output shape."
+    },
+    {
+      "mistake": "Applying two pointers without sorting first",
+      "trigger": "nums = [3, 2, 4], target = 6",
+      "expected": "[1, 2]",
+      "actual": "no pair found",
+      "why": "Two-pointer convergence assumes sorted input. On unsorted data the pointers move the wrong way and skip valid pairs."
+    }
+  ],
+  "edge_cases": [
+    "Exactly two elements that form the pair",
+    "Duplicate values where the pair is two equal numbers",
+    "Negative numbers and zero",
+    "The target requiring the first and last elements"
+  ],
+  "rewrite_challenges": [
+    "Solve it assuming nums is already sorted, using O(1) extra space.",
+    "Return every distinct pair that sums to target, not just one.",
+    "Do it in a single pass without a second lookup structure — is it possible? Argue why or why not."
+  ]
+}

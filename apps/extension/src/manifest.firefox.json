@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "LeetLearn",
+  "version": "0.1.0",
+  "description": "Socratic hints, real code review, and streaks for LeetCode. Solve it yourself first \u2014 then get everything.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "leetlearn@neilthomasmathew.dev",
+      "strict_min_version": "115.0"
+    }
+  },
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://leetcode.com/problems/*",
+    "http://localhost:8000/*"
+  ],
+  "background": {
+    "scripts": [
+      "lib/ext.js",
+      "background.js"
+    ]
+  },
+  "action": {
+    "default_title": "Open LeetLearn"
+  },
+  "sidebar_action": {
+    "default_panel": "panel/panel.html",
+    "default_title": "LeetLearn"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://leetcode.com/problems/*"
+      ],
+      "js": [
+        "lib/ext.js",
+        "content/leetcode-adapter.js",
+        "content/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

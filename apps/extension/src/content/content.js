@@ -1,0 +1,50 @@
+/**
+ * Content script: answers context requests from the panel, and watches for a
+ * submission verdict so the AC gate can flip the moment you pass.
+ */
+(function () {
+  const seen = { verdict: null };
+
+  LL.ext.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (msg?.type === "LL_EXTRACT") {
+      sendResponse(LL.adapter.readContext());
+      return true;
+    }
+    if (msg?.type === "LL_SELFTEST") {
+      sendResponse(LL.adapter.selfTest());
+      return true;
+    }
+    return false;
+  });
+
+  // Watch the result area. LeetCode renders verdicts asynchronously, so poll
+  // the DOM via MutationObserver rather than hooking their network layer
+  // (which would be brittle and invasive).
+  const observer = new MutationObserver(() => {
+    const v = LL.adapter.readVerdict();
+    if (v && v !== seen.verdict) {
+      seen.verdict = v;
+      LL.sendMessage({
+        type: "LL_VERDICT",
+        verdict: v,
+        slug: LL.adapter.readSlug(),
+      }).catch(() => {
+        /* panel closed — the panel re-reads on open, so nothing is lost */
+      });
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+  // Re-arm on SPA navigation between problems.
+  let lastUrl = location.href;
+  setInterval(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      seen.verdict = null;
+      LL.sendMessage({ type: "LL_NAVIGATED", slug: LL.adapter.readSlug() }).catch(() => {});
+    }
+  }, 1000);
+
+  console.debug("[LeetLearn] content script ready —", LL.adapter.readSlug());
+})();

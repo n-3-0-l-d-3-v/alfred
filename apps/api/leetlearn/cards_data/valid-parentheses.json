@@ -1,0 +1,74 @@
+{
+  "slug": "valid-parentheses",
+  "title": "Valid Parentheses",
+  "difficulty": "Easy",
+  "topics": ["string", "stack"],
+  "patterns": [
+    { "name": "Stack (matching pairs)", "confidence": 0.92 },
+    { "name": "Counter (fails for mixed brackets)", "confidence": 0.25 }
+  ],
+  "understanding": "You get a string of brackets: round, square, and curly. Decide whether every opening bracket is closed by the correct type, in the correct order, with nothing left over.",
+  "hint_ladder": {
+    "l1": "When you meet a closing bracket, which opening bracket must it match? Is it always the most recent unmatched opener, or could it be an older one?",
+    "l2": "The rule 'a closer must match the most recently opened, still-unmatched bracket' should feel like a specific ordering discipline. What everyday structure enforces last-in, first-out?",
+    "l3": "Keep track of the openers you've seen but not yet closed. On a closer, only the one at the top of that pile is allowed to match. What has to be true of the pile when the string ends?",
+    "l4": "Push each opener onto a pile. On each closer, check the top of the pile is its partner and remove it; if it isn't, or the pile is empty, it's invalid. At the very end the pile must be empty."
+  },
+  "approaches": [
+    {
+      "name": "Stack",
+      "idea": "Push openers; on a closer, pop and verify the popped opener matches. Valid iff the stack is empty at the end.",
+      "time": "O(n)",
+      "space": "O(n)",
+      "code": "def isValid(s):\n    pairs = {')': '(', ']': '[', '}': '{'}\n    stack = []\n    for ch in s:\n        if ch in pairs:\n            if not stack or stack.pop() != pairs[ch]:\n                return False\n        else:\n            stack.append(ch)\n    return not stack"
+    }
+  ],
+  "complexity": { "target_time": "O(n)", "target_space": "O(n)" },
+  "pitfalls": [
+    { "mistake": "Using only counts of open vs close", "why": "Counting can't tell '([)]' from '()[]'", "symptom": "Passes simple cases, fails interleaved brackets" },
+    { "mistake": "Forgetting the empty-stack check on a closer", "why": "A leading closer has nothing to match", "symptom": "Index/pop error or wrong True on ']'" },
+    { "mistake": "Not requiring the stack to be empty at the end", "why": "Unclosed openers must fail", "symptom": "Wrong True on '(('" }
+  ],
+  "verified": true,
+  "failure_cases": [
+    {
+      "mistake": "Counting brackets instead of matching them",
+      "trigger": "s = \"([)]\"",
+      "expected": "false",
+      "actual": "true",
+      "why": "The counts balance perfectly — one of each, opened before closed. Counting is blind to nesting order, which is the entire problem."
+    },
+    {
+      "mistake": "Popping without checking the stack is empty",
+      "trigger": "s = \"]\"",
+      "expected": "false",
+      "actual": "runtime error (pop from empty stack)",
+      "why": "A closer arrives with nothing open. You have to treat an empty stack as an immediate 'invalid', not reach into it."
+    },
+    {
+      "mistake": "Forgetting the final empty-stack check",
+      "trigger": "s = \"((\"",
+      "expected": "false",
+      "actual": "true",
+      "why": "No closer ever mismatched, because no closer ever arrived. Two openers are still unmatched when the string ends."
+    },
+    {
+      "mistake": "Matching against any open bracket rather than the most recent",
+      "trigger": "s = \"([)]\"",
+      "expected": "false",
+      "actual": "true",
+      "why": "Only the top of the stack is a legal partner. Scanning for any unmatched opener throws away the LIFO discipline the problem is built on."
+    }
+  ],
+  "edge_cases": [
+    "Empty string (conventionally valid)",
+    "A single closing bracket",
+    "Correct types but wrong order, like '([)]'",
+    "All openers and no closers"
+  ],
+  "rewrite_challenges": [
+    "Support a fourth bracket type by changing only the pairs map — verify nothing else needs to move.",
+    "Return the index of the first offending bracket instead of a boolean.",
+    "Solve it without an explicit stack for a single bracket type — why doesn't that generalize to three types?"
+  ]
+}
