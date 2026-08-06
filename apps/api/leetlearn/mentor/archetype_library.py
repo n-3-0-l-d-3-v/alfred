@@ -1600,3 +1600,604 @@ DP_GRID = register(Archetype(
         "State in one sentence what a cell means, precisely enough to test.",
     ),
 ))
+
+# --- prefix sums -------------------------------------------------------------
+
+PREFIX_SUM = register(Archetype(
+    key="prefix-sum",
+    name="Prefix accumulation",
+    summary="Precompute running totals so any range is answerable in one step.",
+    pattern_hint="The same stretches of data are being totalled over and over",
+    topics=("array", "prefix-sum"),
+    target_time="O(n)",
+    target_space="O(n)",
+    brute_time="O(n^2)",
+    ladder=LadderTemplate(
+        l1="You keep needing the total over stretches of {collection}. Two overlapping "
+           "stretches share almost all their {unit}s — how much of that work are you "
+           "currently repeating?",
+        l2="If you knew the running total from the start up to any position, could you "
+           "get the total of an arbitrary stretch without touching its interior?",
+        l3="Yes — the difference of two running totals. That turns a range question "
+           "into a subtraction. What does it cost to have every running total "
+           "available?",
+        l4="Build the running totals in one pass. Any stretch is then the difference "
+           "between the total at its end and the total just before its start. That "
+           "off-by-one at the start is where most of the bugs in this pattern live.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Re-sum each range",
+            idea="Total the {unit}s of every stretch directly.",
+            time="O(n^2)", space="O(1)",
+        ),
+        ApproachTemplate(
+            name="Prefix totals",
+            idea="Precompute running totals and answer each range by subtraction.",
+            time="O(n)", space="O(n)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Subtracting the wrong boundary",
+         "why": "the start of the range must be excluded, not included",
+         "symptom": "answers off by exactly one {unit}"},
+        {"mistake": "No leading zero in the totals",
+         "why": "ranges starting at the beginning have nothing to subtract",
+         "symptom": "out-of-range access or a wrong first answer"},
+        {"mistake": "Assuming values are non-negative",
+         "why": "some variants rely on totals being monotonic",
+         "symptom": "correct on positive input, wrong with negatives"},
+    ),
+    failure_cases=(
+        {"mistake": "Indexing the running totals without a leading zero entry",
+         "trigger": "a range starting at the very first {unit}",
+         "expected": "the total of that range",
+         "actual": "an out-of-range access, or a total missing its first {unit}",
+         "why": "The subtraction needs the total *before* the range starts. For a "
+                "range at position zero that value is zero, and it has to exist."},
+        {"mistake": "Assuming a sliding window works because the values look positive",
+         "trigger": "an input containing negative values",
+         "expected": "the correct range",
+         "actual": "a missed answer",
+         "why": "Window shrinking assumes extending a range cannot help once it is "
+                "too large. Negative values break that, which is what pushes these "
+                "problems toward prefix totals plus a lookup structure."},
+    ),
+    edge_cases=(
+        "An empty {collection}",
+        "A range covering everything",
+        "A range of a single {unit}",
+        "Negative values and zeroes",
+    ),
+    rewrite_challenges=(
+        "Support updates to {collection} between range queries.",
+        "Extend it to two dimensions.",
+        "Count the ranges summing to {goal} using a lookup structure alongside.",
+    ),
+))
+
+# --- greedy ------------------------------------------------------------------
+
+GREEDY = register(Archetype(
+    key="greedy",
+    name="Greedy choice",
+    summary="A locally best choice that provably leads to a globally best answer.",
+    pattern_hint="The obvious move at each step may simply be correct",
+    topics=("greedy", "array"),
+    target_time="O(n log n)",
+    target_space="O(1)",
+    brute_time="O(2^n)",
+    ladder=LadderTemplate(
+        l1="Consider the most obviously attractive move at the current step. Write "
+           "down what makes it attractive — that criterion is the candidate rule.",
+        l2="Now try to break it. Construct an input where taking that move makes the "
+           "final answer worse. If you cannot, you may have a valid rule; if you can, "
+           "the rule needs changing, not patching.",
+        l3="A greedy rule is only correct if taking it never rules out an optimal "
+           "answer. Many of these problems also need {collection} in a particular "
+           "order before the rule is even meaningful. Which order?",
+        l4="Order {collection} by the criterion your rule depends on, then sweep "
+           "through making the locally best choice each time, carrying only the small "
+           "amount of state the rule needs. If you cannot justify why the rule never "
+           "costs you the optimum, the problem probably wants dynamic programming.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Explore every combination",
+            idea="Try all sequences of choices and keep the best.",
+            time="O(2^n)", space="O(n)",
+        ),
+        ApproachTemplate(
+            name="Sort and take the best local choice",
+            idea="Order by the deciding criterion and sweep once.",
+            time="O(n log n)", space="O(1)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Assuming greedy works without an argument",
+         "why": "many problems that look greedy are not",
+         "symptom": "passing the samples, failing a mid-sized case"},
+        {"mistake": "Sorting by the wrong criterion",
+         "why": "the rule is only valid under one particular order",
+         "symptom": "answers close to optimal but not optimal"},
+        {"mistake": "Tracking more state than the rule needs",
+         "why": "it usually signals the rule is not actually greedy",
+         "symptom": "code that grows complicated without becoming correct"},
+    ),
+    failure_cases=(
+        {"mistake": "Taking the largest available option at every step",
+         "trigger": "an input where a smaller early choice unlocks two better later ones",
+         "expected": "the optimal total",
+         "actual": "a total that is locally best at every step and globally worse",
+         "why": "Greedy is a claim about the future, not the present. Without an "
+                "argument that the choice never forecloses an optimum, it is a guess."},
+        {"mistake": "Sorting by one endpoint when the rule depends on the other",
+         "trigger": "an input containing one very wide item and several narrow ones",
+         "expected": "the maximum number of compatible choices",
+         "actual": "one fewer",
+         "why": "The wide item is attractive under the wrong ordering and blocks "
+                "several others. Which endpoint you sort by *is* the algorithm."},
+    ),
+    edge_cases=(
+        "An empty {collection}",
+        "A single option",
+        "All options identical",
+        "Options that all conflict with one another",
+    ),
+    rewrite_challenges=(
+        "Write the exhaustive version and check the greedy answer against it on random inputs.",
+        "State the exchange argument justifying the rule.",
+        "Find an input where the obvious greedy rule fails, if one exists.",
+    ),
+))
+
+# --- bit manipulation --------------------------------------------------------
+
+BIT_MANIPULATION = register(Archetype(
+    key="bit-manipulation",
+    name="Bitwise reasoning",
+    summary="Treat numbers as fixed-width bit patterns rather than quantities.",
+    pattern_hint="The binary representation may matter more than the value",
+    topics=("bit-manipulation", "math"),
+    target_time="O(n)",
+    target_space="O(1)",
+    brute_time="O(n log n)",
+    ladder=LadderTemplate(
+        l1="Stop thinking of these as quantities for a moment and think of them as "
+           "rows of bits. Looking at a single bit position across all of {collection}, "
+           "what do you notice?",
+        l2="Each bit position is independent of the others. That means you can reason "
+           "about one column at a time and never worry about carrying.",
+        l3="There are operations that combine two numbers bit by bit — one that cancels "
+           "matching bits, one that keeps only shared bits, one that keeps bits present "
+           "in either. Which of those matches {goal}?",
+        l4="Combine {collection} with the operation whose behaviour matches {goal}, "
+           "column by column. The properties that make this work are that order does "
+           "not matter and that the operation undoes itself, so anything appearing an "
+           "even number of times disappears on its own.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Count occurrences",
+            idea="Tally every value and inspect the counts.",
+            time="O(n)", space="O(n)",
+        ),
+        ApproachTemplate(
+            name="Bitwise combination",
+            idea="Fold {collection} with a bitwise operation, using constant space.",
+            time="O(n)", space="O(1)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Ignoring negative numbers and sign extension",
+         "why": "shifting a negative value is language-dependent",
+         "symptom": "correct on positives, wrong or looping on negatives"},
+        {"mistake": "Assuming a fixed width that the language does not have",
+         "why": "some languages use arbitrary-precision integers",
+         "symptom": "an infinite loop when shifting"},
+        {"mistake": "Confusing the operators",
+         "why": "cancelling, intersecting and unioning bits are different operations",
+         "symptom": "an answer that is right only when the input is tiny"},
+    ),
+    failure_cases=(
+        {"mistake": "Shifting right in a loop on a negative value",
+         "trigger": "any negative {unit}",
+         "expected": "termination after the width of the number",
+         "actual": "an infinite loop",
+         "why": "Sign extension keeps feeding in set bits from the left, so the value "
+                "never reaches zero. The loop needs a bounded count, not a zero test."},
+        {"mistake": "Using the operation that keeps shared bits when you need the one "
+                    "that cancels them",
+         "trigger": "a {collection} where every value but one appears twice",
+         "expected": "the value appearing once",
+         "actual": "zero, or an unrelated value",
+         "why": "Only the cancelling operation makes pairs vanish. Keeping shared bits "
+                "collapses toward zero as soon as any two values differ."},
+    ),
+    edge_cases=(
+        "A single {unit}",
+        "Zero as a value",
+        "Negative values",
+        "Values at the maximum width",
+    ),
+    rewrite_challenges=(
+        "Solve it with a counting structure and compare the space used.",
+        "Handle the variant where values repeat three times rather than twice.",
+        "Explain why order of combination does not affect the result.",
+    ),
+))
+
+# --- tries -------------------------------------------------------------------
+
+TRIE = register(Archetype(
+    key="trie",
+    name="Prefix tree",
+    summary="Share common prefixes so lookups cost the length of the key.",
+    pattern_hint="Many of these keys begin the same way",
+    topics=("trie", "string", "design"),
+    target_time="O(L)",
+    target_space="O(total characters)",
+    brute_time="O(n*L)",
+    ladder=LadderTemplate(
+        l1="Look at {collection} and notice how much the keys have in common at their "
+           "starts. Storing each key separately stores those shared beginnings over "
+           "and over.",
+        l2="What if the shared beginning were stored once, with the keys diverging only "
+           "where they actually differ? What shape does that structure take?",
+        l3="A tree where each step consumes one character and each path spells a "
+           "prefix. Looking up a key then costs its own length, regardless of how many "
+           "keys exist. What extra information does a node need so you can tell a "
+           "complete key from a mere prefix?",
+        l4="Build a tree whose edges are characters. Inserting walks down, creating "
+           "steps as needed, and marks the final node as terminal. Searching walks the "
+           "same path and checks that mark. Prefix queries are identical but skip the "
+           "terminal check — that one flag is the whole difference.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Check every key",
+            idea="Compare against each stored key in turn.",
+            time="O(n*L)", space="O(n*L)",
+        ),
+        ApproachTemplate(
+            name="Prefix tree",
+            idea="Share prefixes structurally so lookup costs only the key length.",
+            time="O(L)", space="O(total characters)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "No terminal marker on nodes",
+         "why": "a stored prefix becomes indistinguishable from a stored key",
+         "symptom": "prefixes of real keys reported as present"},
+        {"mistake": "Sharing one child map across nodes",
+         "why": "a mutable default is created once, not per node",
+         "symptom": "every key appearing to contain every other"},
+        {"mistake": "Not handling the empty key",
+         "why": "it terminates at the root",
+         "symptom": "an incorrect answer or a crash on empty input"},
+    ),
+    failure_cases=(
+        {"mistake": "Reporting a key as present whenever its path exists",
+         "trigger": "searching for a string that is a strict prefix of a stored key",
+         "expected": "not present",
+         "actual": "present",
+         "why": "The path exists because a longer key created it. Only the terminal "
+                "marker distinguishes a stored key from a waypoint."},
+        {"mistake": "Giving every node the same child mapping by accident",
+         "trigger": "inserting two keys with different first characters",
+         "expected": "two separate branches",
+         "actual": "both keys appearing under every branch",
+         "why": "A shared mutable default means every node writes into one object. "
+                "Each node needs its own."},
+    ),
+    edge_cases=(
+        "An empty key",
+        "One key that is a prefix of another",
+        "Keys with no shared prefix at all",
+        "A single very long key",
+    ),
+    rewrite_challenges=(
+        "Support deletion, freeing nodes no key needs any more.",
+        "Add wildcard matching for a single character.",
+        "Compare the memory against a plain hash set, honestly.",
+    ),
+))
+
+# --- matrix ------------------------------------------------------------------
+
+MATRIX_TRAVERSAL = register(Archetype(
+    key="matrix-traversal",
+    name="Matrix walking and transformation",
+    summary="Index arithmetic over a grid, often in place.",
+    pattern_hint="The indices themselves are the puzzle",
+    topics=("matrix", "array", "simulation"),
+    target_time="O(n*m)",
+    target_space="O(1)",
+    brute_time="O(n*m)",
+    ladder=LadderTemplate(
+        l1="Take a small grid and write out, by hand, where each {unit} needs to end "
+           "up. Do not generalise yet — just get the mapping down for a three-by-three.",
+        l2="Look at the pairs of original and final positions you wrote down. What is "
+           "the relationship between the two, expressed in terms of the row, the "
+           "column, and the size?",
+        l3="Building a fresh grid from that mapping is straightforward. Doing it in "
+           "place is harder, because writing one position destroys another. What has "
+           "to happen to the displaced value?",
+        l4="Either construct the result separately from the mapping, or, for in place, "
+           "move values in closed cycles so nothing is lost — often achievable as a "
+           "sequence of simpler whole-grid operations rather than one clever pass.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Build a new grid",
+            idea="Write each {unit} into a fresh grid at its mapped position.",
+            time="O(n*m)", space="O(n*m)",
+        ),
+        ApproachTemplate(
+            name="In-place transformation",
+            idea="Move values in cycles, or compose simpler whole-grid operations.",
+            time="O(n*m)", space="O(1)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Confusing rows with columns",
+         "why": "the two index orders are easy to transpose mentally",
+         "symptom": "a transposed or mirrored result"},
+        {"mistake": "Overwriting a value before it has been moved",
+         "why": "in-place work destroys as it writes",
+         "symptom": "duplicated values and lost ones"},
+        {"mistake": "Assuming the grid is square",
+         "why": "many transformations only make sense when it is",
+         "symptom": "out-of-range access on rectangular input"},
+    ),
+    failure_cases=(
+        {"mistake": "Writing directly into the target position without saving what was there",
+         "trigger": "any grid larger than one by one",
+         "expected": "every {unit} relocated",
+         "actual": "one value smeared across several positions",
+         "why": "Each write destroys a value that had not moved yet. Either move in "
+                "complete cycles or work into separate storage."},
+        {"mistake": "Iterating the full grid while transforming in place",
+         "trigger": "a square grid being rotated by layers",
+         "expected": "one rotation",
+         "actual": "values rotated twice, landing back near where they started",
+         "why": "Covering every position revisits cells that have already been moved. "
+                "The traversal must cover each cycle exactly once."},
+    ),
+    edge_cases=(
+        "An empty grid",
+        "A one-by-one grid",
+        "A single row or single column",
+        "A rectangular, non-square grid",
+    ),
+    rewrite_challenges=(
+        "Do it in place using a constant amount of extra space.",
+        "Handle rectangular grids, or explain precisely why you cannot.",
+        "Express the transformation as a composition of two simpler ones.",
+    ),
+))
+
+# --- in-place array marking --------------------------------------------------
+
+INDEX_AS_STORAGE = register(Archetype(
+    key="index-as-storage",
+    name="Using the array itself as storage",
+    summary="Encode information in positions or signs to reach constant extra space.",
+    pattern_hint="The constraints on the values look suspiciously like the indices",
+    topics=("array", "in-place"),
+    target_time="O(n)",
+    target_space="O(1)",
+    brute_time="O(n)",
+    ladder=LadderTemplate(
+        l1="Read the constraints on the values in {collection} and compare them with "
+           "the valid positions. That correspondence is not a coincidence.",
+        l2="A lookup structure solves this immediately but costs space proportional to "
+           "the input. You are being asked for constant extra space, so the "
+           "information has to live somewhere that already exists.",
+        l3="{collection} itself is writable. Is there a way to record 'I have seen the "
+           "value that belongs at this position' without losing the value stored "
+           "there?",
+        l4="Use each position as its own marker — either by moving values to where "
+           "they belong, or by marking the position a value points at while keeping "
+           "enough information to recover the original. Then a second pass reads the "
+           "answer off the positions that were never marked.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Auxiliary lookup structure",
+            idea="Record seen values in a separate set or map.",
+            time="O(n)", space="O(n)",
+        ),
+        ApproachTemplate(
+            name="In-place marking",
+            idea="Encode the information in {collection} itself and read it back in a "
+                 "second pass.",
+            time="O(n)", space="O(1)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Destroying values you still need",
+         "why": "the marking must be reversible or non-destructive",
+         "symptom": "correct on the first pass, wrong on the second"},
+        {"mistake": "Marking the same position twice",
+         "why": "a repeated mark can undo itself",
+         "symptom": "duplicates in the input producing wrong answers"},
+        {"mistake": "Not handling values outside the valid range",
+         "why": "they index nothing and must be neutralised first",
+         "symptom": "out-of-range access"},
+    ),
+    failure_cases=(
+        {"mistake": "Negating a position that was already negated",
+         "trigger": "a {collection} containing the same value twice",
+         "expected": "the position stays marked",
+         "actual": "the mark is undone",
+         "why": "Negation is its own inverse. Marking must check whether the mark is "
+                "already present rather than blindly toggling."},
+        {"mistake": "Indexing with a value outside the valid range",
+         "trigger": "a {collection} containing a value larger than its length",
+         "expected": "that value ignored",
+         "actual": "an out-of-range access",
+         "why": "Only values that correspond to positions can be used as positions. "
+                "Everything else has to be filtered or clamped first."},
+    ),
+    edge_cases=(
+        "An empty {collection}",
+        "All values identical",
+        "Values outside the valid range",
+        "An already-correct arrangement",
+    ),
+    rewrite_challenges=(
+        "Restore {collection} to its original state afterwards.",
+        "Solve it with a lookup structure and compare readability against space.",
+        "Handle values outside the range explicitly rather than assuming them away.",
+    ),
+))
+
+# --- design ------------------------------------------------------------------
+
+DESIGN_COMPOSITE = register(Archetype(
+    key="design-composite",
+    name="Composing two structures for one guarantee",
+    summary="No single structure gives every required operation the needed cost.",
+    pattern_hint="Each operation is easy alone; together they conflict",
+    topics=("design", "hash-table", "linked-list"),
+    target_time="O(1)",
+    target_space="O(n)",
+    brute_time="O(n)",
+    ladder=LadderTemplate(
+        l1="List the operations you must support and the cost each is allowed. Then "
+           "pick your favourite single structure and mark which of those it fails.",
+        l2="Every single structure fails at least one. That is the actual problem: no "
+           "one of them provides all the guarantees at once.",
+        l3="So use two, each covering the other's weakness, kept perfectly in step. "
+           "Which structure gives instant lookup by key, and which gives instant "
+           "insertion and removal at arbitrary positions?",
+        l4="Combine a lookup structure mapping keys to locations with an ordered "
+           "structure supporting cheap rearrangement. Every operation touches both, "
+           "and the correctness hinges entirely on their never disagreeing about what "
+           "exists.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Single structure",
+            idea="Use one structure and accept a linear cost on some operation.",
+            time="O(n)", space="O(n)",
+        ),
+        ApproachTemplate(
+            name="Two structures kept in step",
+            idea="Pair fast lookup with cheap reordering, updating both together.",
+            time="O(1)", space="O(n)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Updating one structure and not the other",
+         "why": "they encode the same facts and must agree",
+         "symptom": "entries that exist in one view and not the other"},
+        {"mistake": "Not handling a key that already exists",
+         "why": "insert and update are different operations",
+         "symptom": "duplicates, or a size that drifts upward"},
+        {"mistake": "Missing boundary cases at the ends",
+         "why": "removing the first or last element touches fewer links",
+         "symptom": "crashes only when the structure empties or holds one item"},
+    ),
+    failure_cases=(
+        {"mistake": "Removing from the ordered structure but leaving the key in the map",
+         "trigger": "an eviction followed by a lookup of the evicted key",
+         "expected": "not found",
+         "actual": "a reference to a removed location",
+         "why": "The two structures have diverged. Every mutation must touch both, "
+                "which is why these are usually written as a single private helper."},
+        {"mistake": "Treating a repeat insertion as a new entry",
+         "trigger": "inserting an existing key with a new value",
+         "expected": "the entry updated and moved",
+         "actual": "two entries for one key",
+         "why": "Presence has to be checked first; update and insert follow different "
+                "paths through both structures."},
+    ),
+    edge_cases=(
+        "An empty structure",
+        "A capacity of one",
+        "Repeated keys",
+        "Removing the only remaining entry",
+    ),
+    rewrite_challenges=(
+        "Support a capacity supplied at construction, evicting correctly when full.",
+        "Make every mutation go through one private helper that touches both structures.",
+        "Argue why each operation really is constant time, including the worst case.",
+    ),
+))
+
+# --- math --------------------------------------------------------------------
+
+MATH_REASONING = register(Archetype(
+    key="math-reasoning",
+    name="Arithmetic and number-theoretic reasoning",
+    summary="A property of the numbers replaces the search entirely.",
+    pattern_hint="There may be a closed-form shortcut hiding here",
+    topics=("math",),
+    target_time="O(log n)",
+    target_space="O(1)",
+    brute_time="O(n)",
+    ladder=LadderTemplate(
+        l1="Work the first several cases out by hand and write the results in a row. "
+           "Do not look for an algorithm yet — look at the sequence you produced.",
+        l2="Is there a relationship between consecutive results, or a closed form that "
+           "produces them? Many of these problems are a search only until you notice "
+           "the pattern.",
+        l3="If a relationship exists, the loop over every value becomes unnecessary. "
+           "What remains is arithmetic, and the only real risks are overflow and the "
+           "boundaries.",
+        l4="Derive the relationship from the small cases, verify it against a case you "
+           "did not use to derive it, then implement the arithmetic directly. Handle "
+           "zero, one, and negative inputs deliberately — closed forms tend to be "
+           "wrong exactly there.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Simulate every step",
+            idea="Loop through all values and compute directly.",
+            time="O(n)", space="O(1)",
+        ),
+        ApproachTemplate(
+            name="Closed form or fast exponentiation",
+            idea="Replace the loop with the derived relationship.",
+            time="O(log n)", space="O(1)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Overflow in an intermediate value",
+         "why": "the result fits but a step along the way does not",
+         "symptom": "wrong answers only on large inputs"},
+        {"mistake": "Deriving a rule from too few cases",
+         "why": "several formulas agree on the first three values",
+         "symptom": "correct on the samples, wrong beyond them"},
+        {"mistake": "Ignoring zero and negative inputs",
+         "why": "closed forms often assume a positive domain",
+         "symptom": "a crash or nonsense at the boundaries"},
+    ),
+    failure_cases=(
+        {"mistake": "Verifying the derived rule only on the cases it was derived from",
+         "trigger": "an input beyond the range you worked out by hand",
+         "expected": "the correct value",
+         "actual": "a plausible but wrong value",
+         "why": "A rule fitted to three points will fit those three points. Confirming "
+                "it needs a case that had no say in producing it."},
+        {"mistake": "Computing a large intermediate before reducing it",
+         "trigger": "an input near the stated constraint limit",
+         "expected": "the correct value",
+         "actual": "a wrapped or truncated value",
+         "why": "The final answer fitting the type does not mean every step did. "
+                "Reduce as you go rather than at the end."},
+    ),
+    edge_cases=(
+        "Zero",
+        "One",
+        "Negative input",
+        "The maximum value the constraints allow",
+    ),
+    rewrite_challenges=(
+        "Verify the closed form against a brute-force loop on many random inputs.",
+        "Handle the negative domain explicitly.",
+        "Prove the relationship rather than inferring it from examples.",
+    ),
+))
