@@ -541,3 +541,376 @@ MONOTONIC_STACK = register(Archetype(
         "Argue why the total work is linear even though the inner removal is a loop.",
     ),
 ))
+
+# --- binary search -----------------------------------------------------------
+
+BINARY_SEARCH_SORTED = register(Archetype(
+    key="binary-search-sorted",
+    name="Binary search over sorted data",
+    summary="Halve the search space using an ordering guarantee.",
+    pattern_hint="The input is ordered, and that ordering is probably the point",
+    topics=("array", "binary-search"),
+    target_time="O(log n)",
+    target_space="O(1)",
+    brute_time="O(n)",
+    ladder=LadderTemplate(
+        l1="{collection} is ordered. Look at the {unit} in the exact middle and "
+           "compare it with {goal}. What have you learned about the two halves?",
+        l2="One of those halves cannot possibly contain the answer, and the ordering "
+           "is what tells you which. Discarding it costs nothing.",
+        l3="Each comparison throws away half of what remains. Starting from a million "
+           "{unit}s, roughly how many comparisons before only one is left?",
+        l4="Track the range still under consideration. Repeatedly inspect its middle, "
+           "decide which side can be eliminated, and narrow the range accordingly. "
+           "The two decisions that matter are whether the middle itself stays in the "
+           "range, and what to report when the range empties.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Linear scan",
+            idea="Examine every {unit} until {goal} is located.",
+            time="O(n)", space="O(1)",
+        ),
+        ApproachTemplate(
+            name="Binary search",
+            idea="Halve the remaining range at each comparison against the middle {unit}.",
+            time="O(log n)", space="O(1)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "An inconsistent range convention",
+         "why": "mixing inclusive and exclusive ends breaks the loop's invariant",
+         "symptom": "an infinite loop or a missed final {unit}"},
+        {"mistake": "Excluding the middle when it might be the answer",
+         "why": "the eliminated half must provably not contain it",
+         "symptom": "the answer missed when it sits exactly at a midpoint"},
+        {"mistake": "Not defining what happens when nothing matches",
+         "why": "many variants want an insertion position rather than a failure",
+         "symptom": "correct on hits, wrong on misses"},
+    ),
+    failure_cases=(
+        {"mistake": "Narrowing the range without ever excluding the middle",
+         "trigger": "a two-{unit} {collection} where the answer is the second",
+         "expected": "the correct position",
+         "actual": "the loop never terminates",
+         "why": "The range stops shrinking once it holds two items, so the midpoint "
+                "stays put and the same comparison repeats forever."},
+        {"mistake": "Assuming the answer is always present",
+         "trigger": "a {goal} that does not appear in {collection}",
+         "expected": "the documented not-found result",
+         "actual": "whatever happened to be at the final position",
+         "why": "The loop ends when the range empties, which is a different outcome "
+                "from finding something. It has to be reported differently."},
+    ),
+    edge_cases=(
+        "An empty {collection}",
+        "A single {unit}",
+        "{goal} smaller than everything, or larger than everything",
+        "Duplicate values around {goal}",
+    ),
+    rewrite_challenges=(
+        "Return the insertion position when {goal} is absent.",
+        "Find the first and last occurrence when duplicates exist.",
+        "State the loop invariant your range convention maintains, precisely.",
+    ),
+))
+
+BINARY_SEARCH_ON_ANSWER = register(Archetype(
+    key="binary-search-on-answer",
+    name="Binary search on the answer",
+    summary="Search the space of possible answers rather than the input.",
+    pattern_hint="Checking a candidate answer looks easier than constructing one",
+    topics=("array", "binary-search", "greedy"),
+    target_time="O(n log m)",
+    target_space="O(1)",
+    brute_time="O(n*m)",
+    ladder=LadderTemplate(
+        l1="Constructing {goal} directly is hard. Try an easier question instead: "
+           "given a specific candidate value, could you check whether it works?",
+        l2="Suppose a candidate works. What can you say about every larger candidate — "
+           "and if it fails, what about every smaller one? That property is the whole "
+           "problem.",
+        l3="That yes-or-no answer is monotonic across the range of candidates: false "
+           "everywhere below some boundary, true everywhere above it. You are looking "
+           "for that boundary. What does that let you stop doing?",
+        l4="Establish the range of conceivable answers. Repeatedly test the middle "
+           "candidate with your checking routine, keep the half that still contains "
+           "the boundary, and narrow until one candidate remains. The checker is "
+           "where the real problem lives; the search around it is mechanical.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Try every candidate",
+            idea="Test each possible answer in order until one works.",
+            time="O(n*m)", space="O(1)",
+        ),
+        ApproachTemplate(
+            name="Binary search the answer space",
+            idea="Exploit that feasibility is monotonic in the candidate to halve the "
+                 "range each time.",
+            time="O(n log m)", space="O(1)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Searching a range that excludes the true answer",
+         "why": "the bounds must be provably wide enough",
+         "symptom": "answers pinned to one end of the range"},
+        {"mistake": "A checker that is not actually monotonic",
+         "why": "binary search is meaningless without that property",
+         "symptom": "answers that vary with unrelated details of the input"},
+        {"mistake": "Returning the last tested candidate",
+         "why": "the boundary is not necessarily the final midpoint",
+         "symptom": "an answer consistently off by one"},
+    ),
+    failure_cases=(
+        {"mistake": "Starting the range at one instead of the smallest feasible value",
+         "trigger": "an input whose answer must be at least as large as its biggest {unit}",
+         "expected": "the true minimum",
+         "actual": "an infeasible value at the bottom of the range",
+         "why": "The search can only return something inside its range. If the answer "
+                "was never in it, no amount of correct halving finds it."},
+        {"mistake": "Checking feasibility with a subtly different condition",
+         "trigger": "an input sitting exactly on the boundary",
+         "expected": "the boundary value",
+         "actual": "one either side of it",
+         "why": "The checker defines the boundary. A strict comparison where the "
+                "problem allows equality moves it by exactly one."},
+    ),
+    edge_cases=(
+        "The answer equal to the lower bound",
+        "The answer equal to the upper bound",
+        "A single {unit}",
+        "All {unit}s identical",
+    ),
+    rewrite_challenges=(
+        "State and justify the bounds of your search range.",
+        "Prove the checker is monotonic, or find the input where it is not.",
+        "Solve the maximising variant and note which comparisons flip.",
+    ),
+))
+
+# --- heaps -------------------------------------------------------------------
+
+HEAP_TOP_K = register(Archetype(
+    key="heap-top-k",
+    name="Heap for top-k and streaming order",
+    summary="Maintain the k best seen so far without sorting everything.",
+    pattern_hint="Only a few of the values actually matter",
+    topics=("array", "heap", "sorting"),
+    target_time="O(n log k)",
+    target_space="O(k)",
+    brute_time="O(n log n)",
+    ladder=LadderTemplate(
+        l1="You want the best {width} {unit}s of {collection}, not all of them in "
+           "order. How much of a full sort is genuinely useful to you?",
+        l2="Hold onto {width} candidates as you scan. When a new {unit} arrives, the "
+           "only one it could displace is the weakest of the ones you are holding. "
+           "Which operations do you actually need on that group?",
+        l3="You need the weakest of the group, and you need to replace it — nothing "
+           "else. You never need the group fully ordered. What structure gives you "
+           "exactly those two operations cheaply?",
+        l4="Keep a group of at most {width} candidates that can surrender its weakest "
+           "member on demand. Scan {collection} once, admitting each new {unit} only "
+           "when it beats that weakest member, and evicting the weakest to stay at "
+           "{width}. What remains is the answer.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Sort everything",
+            idea="Order all of {collection} and take the first {width}.",
+            time="O(n log n)", space="O(n)",
+        ),
+        ApproachTemplate(
+            name="Bounded heap",
+            idea="Keep only {width} candidates, evicting the weakest as better {unit}s "
+                 "arrive.",
+            time="O(n log k)", space="O(k)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Using the wrong heap direction",
+         "why": "keeping the largest {width} needs the smallest at the top",
+         "symptom": "exactly the wrong {width} {unit}s returned"},
+        {"mistake": "Letting the heap grow beyond {width}",
+         "why": "the space and time advantage disappears",
+         "symptom": "correct answers with no complexity gain"},
+        {"mistake": "Comparing on the wrong field for tuples",
+         "why": "ordering follows the first field by default",
+         "symptom": "plausible but incorrectly ranked output"},
+    ),
+    failure_cases=(
+        {"mistake": "Keeping a heap ordered the same way as the answer",
+         "trigger": "any {collection} longer than {width}",
+         "expected": "the best {width} {unit}s",
+         "actual": "the worst {width}",
+         "why": "To keep the largest values you must be able to discard the smallest "
+                "of what you hold, so the top of the heap has to be the smallest."},
+        {"mistake": "Not handling a {width} larger than {collection}",
+         "trigger": "a {collection} with fewer than {width} {unit}s",
+         "expected": "everything, in the required order",
+         "actual": "an error or a short result",
+         "why": "The eviction step assumes the heap is full, which it never becomes."},
+    ),
+    edge_cases=(
+        "{width} equal to one",
+        "{width} equal to the size of {collection}",
+        "{width} larger than {collection}",
+        "Ties on the boundary of the top {width}",
+    ),
+    rewrite_challenges=(
+        "Solve it with sorting and compare the complexities honestly.",
+        "Support a stream where {collection} does not fit in memory.",
+        "Return the k-th value only, and note what work becomes unnecessary.",
+    ),
+))
+
+# --- intervals ---------------------------------------------------------------
+
+MERGE_INTERVALS = register(Archetype(
+    key="merge-intervals",
+    name="Interval sorting and sweeping",
+    summary="Order intervals by an endpoint, then make one pass deciding overlaps.",
+    pattern_hint="The order the ranges arrive in is probably not the useful order",
+    topics=("array", "intervals", "sorting"),
+    target_time="O(n log n)",
+    target_space="O(n)",
+    brute_time="O(n^2)",
+    ladder=LadderTemplate(
+        l1="The ranges arrive in arbitrary order. Comparing every range with every "
+           "other works. Before optimising, ask what order would make the comparisons "
+           "unnecessary.",
+        l2="Sort them by where they start. Now, walking left to right, how many of the "
+           "ranges you have already passed could still overlap the one in front of you?",
+        l3="Only the reach of what you have accumulated so far matters — everything "
+           "further left is settled and can never overlap anything ahead. So the state "
+           "you carry is tiny. What exactly is it?",
+        l4="Order the ranges by start. Carry one accumulated range forward. Each new "
+           "range either touches it, in which case the accumulated reach extends, or "
+           "it does not, in which case the accumulated one is final and the new one "
+           "takes over. The definition of touching is where the problem hides.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Compare all pairs",
+            idea="Test every pair of ranges for overlap and merge repeatedly.",
+            time="O(n^2)", space="O(n)",
+        ),
+        ApproachTemplate(
+            name="Sort and sweep",
+            idea="Order by start, then make one pass extending or closing the "
+                 "accumulated range.",
+            time="O(n log n)", space="O(n)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Sorting by the wrong endpoint",
+         "why": "start order is what makes a single pass sufficient",
+         "symptom": "merges missed when a long range precedes a short one"},
+        {"mistake": "Getting touching-versus-overlapping wrong",
+         "why": "whether shared endpoints merge is problem-specific",
+         "symptom": "off-by-one merges at the boundaries"},
+        {"mistake": "Forgetting the final accumulated range",
+         "why": "the loop closes ranges only when a new one fails to touch",
+         "symptom": "the last range always missing from the output"},
+    ),
+    failure_cases=(
+        {"mistake": "Never emitting the range still accumulating when the loop ends",
+         "trigger": "any input whose last two ranges overlap",
+         "expected": "all merged ranges including the final one",
+         "actual": "the output missing its last entry",
+         "why": "Ranges are emitted when something fails to touch them. The final one "
+                "has nothing after it, so it must be emitted explicitly."},
+        {"mistake": "Treating ranges that merely touch as separate",
+         "trigger": "two ranges where one ends exactly where the next begins",
+         "expected": "a single merged range, if the problem counts touching as overlap",
+         "actual": "two ranges",
+         "why": "This is entirely a matter of strict versus non-strict comparison, and "
+                "the problem statement decides it, not intuition."},
+    ),
+    edge_cases=(
+        "A single range",
+        "Ranges that are entirely contained in others",
+        "Ranges sharing exactly one endpoint",
+        "Already-sorted and reverse-sorted input",
+    ),
+    rewrite_challenges=(
+        "Return the gaps between ranges rather than the merged ranges.",
+        "Insert one new range into an already-merged list without re-sorting.",
+        "Find the maximum number of ranges overlapping at any single point.",
+    ),
+))
+
+# --- linked lists ------------------------------------------------------------
+
+LINKED_LIST_REWIRING = register(Archetype(
+    key="linked-list-rewiring",
+    name="Pointer rewiring on a linked list",
+    summary="Re-aim the links themselves rather than moving any data.",
+    pattern_hint="The links matter more than the values they carry",
+    topics=("linked-list",),
+    target_time="O(n)",
+    target_space="O(1)",
+    brute_time="O(n)",
+    ladder=LadderTemplate(
+        l1="You cannot index into {collection} — you can only follow links forward. "
+           "Given that, what is the one thing you lose the instant you re-aim a link?",
+        l2="You lose the rest of the list. So before changing any link, you need to "
+           "have already secured what it currently points at. How many things must you "
+           "hold at once to change one link safely?",
+        l3="Three positions is enough: what came before, where you are, and what comes "
+           "next. Copying the whole structure into an array also works — what does that "
+           "cost you that the three-marker version does not?",
+        l4="Advance through {collection} once, carrying markers for the previous and "
+           "next positions. At each step, secure the next position first, then re-aim "
+           "the current link backward, then shift all the markers forward. The order of "
+           "those three actions is the entire problem.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Copy into an array",
+            idea="Read every {unit} into a list, rearrange, and rebuild.",
+            time="O(n)", space="O(n)",
+        ),
+        ApproachTemplate(
+            name="In-place rewiring",
+            idea="Carry previous and next markers and re-aim each link during one pass.",
+            time="O(n)", space="O(1)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Re-aiming a link before securing what follows it",
+         "why": "the remainder of {collection} becomes unreachable",
+         "symptom": "a truncated result or a lost list"},
+        {"mistake": "Returning the original head",
+         "why": "after rewiring it is the tail",
+         "symptom": "a result containing a single {unit}"},
+        {"mistake": "Not handling an empty or single-{unit} list",
+         "why": "the marker dance assumes at least two positions",
+         "symptom": "a null-reference crash on the smallest inputs"},
+    ),
+    failure_cases=(
+        {"mistake": "Re-aiming the current link before saving the next position",
+         "trigger": "any {collection} with more than one {unit}",
+         "expected": "the fully rewired list",
+         "actual": "a list of one or two {unit}s",
+         "why": "The link you overwrote was the only route to the remainder. Once it "
+                "is gone the rest is unreachable, so the traversal stops immediately."},
+        {"mistake": "Returning the node you started from",
+         "trigger": "any non-empty {collection}",
+         "expected": "the new head",
+         "actual": "a single {unit}",
+         "why": "The node you began at ends up last. The new head is whatever the "
+                "traversal was holding when it ran out of list."},
+    ),
+    edge_cases=(
+        "An empty {collection}",
+        "A single {unit}",
+        "Exactly two {unit}s",
+        "Duplicate values throughout",
+    ),
+    rewrite_challenges=(
+        "Solve it recursively and compare the space cost honestly.",
+        "Reverse only a sub-range, leaving the rest intact.",
+        "Explain why a dummy leading node simplifies the boundary handling.",
+    ),
+))
