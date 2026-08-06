@@ -914,3 +914,689 @@ LINKED_LIST_REWIRING = register(Archetype(
         "Explain why a dummy leading node simplifies the boundary handling.",
     ),
 ))
+
+# --- trees -------------------------------------------------------------------
+
+TREE_DFS = register(Archetype(
+    key="tree-dfs",
+    name="Depth-first recursion on a tree",
+    summary="Solve a tree problem by combining the answers from its subtrees.",
+    pattern_hint="The whole may be answerable from its parts",
+    topics=("tree", "depth-first-search", "recursion"),
+    target_time="O(n)",
+    target_space="O(h)",
+    brute_time="O(n)",
+    ladder=LadderTemplate(
+        l1="Suppose someone handed you the correct answer for the left subtree and the "
+           "correct answer for the right subtree, for free. Could you produce {goal} "
+           "for the whole tree from just those two values and the current {unit}?",
+        l2="That combining step is the entire problem. Write it out in words for one "
+           "node before writing anything else — what exactly do you do with the two "
+           "answers you were handed?",
+        l3="Now the base case. What is {goal} for a tree with no {unit}s at all? Get "
+           "this wrong and every answer above it inherits the error.",
+        l4="Recurse into both subtrees, then combine their results with the current "
+           "{unit} using the rule you described. Each {unit} is visited once. The one "
+           "subtlety is whether the value you return upward is the same thing as the "
+           "answer you are accumulating — for many tree problems it is not.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Recursive depth-first",
+            idea="Combine subtree results at each {unit}.",
+            time="O(n)", space="O(h)",
+        ),
+        ApproachTemplate(
+            name="Iterative with an explicit stack",
+            idea="Simulate the recursion to avoid depth limits.",
+            time="O(n)", space="O(h)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Missing or wrong base case",
+         "why": "the empty tree is the foundation every other answer rests on",
+         "symptom": "answers off by a constant, or infinite recursion"},
+        {"mistake": "Confusing the returned value with the accumulated answer",
+         "why": "many tree problems track a global best separately from what each "
+                "call reports upward",
+         "symptom": "correct on small trees, wrong when the best path avoids the root"},
+        {"mistake": "Ignoring recursion depth on a degenerate tree",
+         "why": "a tree shaped like a list is as deep as it is large",
+         "symptom": "a stack overflow only on large skewed inputs"},
+    ),
+    failure_cases=(
+        {"mistake": "Returning the accumulated best instead of the value the parent needs",
+         "trigger": "a tree whose best answer lies entirely within one subtree",
+         "expected": "the true best across the whole tree",
+         "actual": "a value that only makes sense as a path through the root",
+         "why": "The parent needs a value it can extend. The answer you are tracking "
+                "may not be extendable. Those are two different quantities and they "
+                "need two different variables."},
+        {"mistake": "Treating a missing child as an error rather than a base case",
+         "trigger": "any tree with a node having exactly one child",
+         "expected": "the correct combined answer",
+         "actual": "a null-reference crash",
+         "why": "Absence is a legitimate subtree, and it has a well-defined answer. "
+                "Handling it as a value rather than a special case removes most of "
+                "the branching."},
+    ),
+    edge_cases=(
+        "An empty tree",
+        "A single {unit}",
+        "A tree degenerate into a straight line",
+        "A perfectly balanced tree",
+    ),
+    rewrite_challenges=(
+        "Rewrite it iteratively with an explicit stack.",
+        "Return the path achieving {goal}, not just its value.",
+        "State what each recursive call promises its caller, in one sentence.",
+    ),
+))
+
+TREE_BFS = register(Archetype(
+    key="tree-bfs",
+    name="Breadth-first traversal by level",
+    summary="Process a tree one full level at a time.",
+    pattern_hint="Distance from the root looks like it matters",
+    topics=("tree", "breadth-first-search", "queue"),
+    target_time="O(n)",
+    target_space="O(w)",
+    brute_time="O(n)",
+    ladder=LadderTemplate(
+        l1="{goal} depends on how far each {unit} sits from the root. Depth-first "
+           "recursion wanders deep before it goes wide — does that visit order help "
+           "you here?",
+        l2="You want to finish an entire level before starting the next. That means "
+           "processing {unit}s in the order they were discovered. Which discipline "
+           "does that describe: newest-first, or oldest-first?",
+        l3="Oldest-first gives you level order automatically. But to answer per-level "
+           "questions you need to know where one level ends. What do you already know "
+           "at the top of each round that tells you that?",
+        l4="Keep a pending group, seeded with the root. Each round, note how many "
+           "{unit}s are pending — that count is exactly the current level — and process "
+           "precisely that many, adding their children for the next round. Capturing "
+           "the count before processing is what keeps the levels separate.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Depth-first with a depth parameter",
+            idea="Recurse, bucketing each {unit} by its depth.",
+            time="O(n)", space="O(n)",
+        ),
+        ApproachTemplate(
+            name="Level-by-level breadth-first",
+            idea="Process a whole level per round using the pending count as the "
+                 "level boundary.",
+            time="O(n)", space="O(w)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Reading the pending count after adding children",
+         "why": "the boundary between levels is destroyed",
+         "symptom": "levels merging into one another"},
+        {"mistake": "Using newest-first ordering",
+         "why": "that produces depth-first order, not level order",
+         "symptom": "correct {unit}s grouped into the wrong levels"},
+        {"mistake": "Not handling an empty tree before the first round",
+         "why": "the root may not exist",
+         "symptom": "a crash or a spurious empty level"},
+    ),
+    failure_cases=(
+        {"mistake": "Measuring the level size after enqueuing the next level",
+         "trigger": "any tree deeper than two levels",
+         "expected": "one group per level",
+         "actual": "levels bleeding together",
+         "why": "The count has to be taken at the top of the round, while the pending "
+                "group holds exactly one level and nothing else."},
+        {"mistake": "Seeding the traversal without checking the root exists",
+         "trigger": "an empty tree",
+         "expected": "an empty result",
+         "actual": "a result containing one empty level, or a crash",
+         "why": "Absence of a root is not the same as a level with nothing in it."},
+    ),
+    edge_cases=(
+        "An empty tree",
+        "A single {unit}",
+        "A tree degenerate into a straight line",
+        "A very wide, shallow tree",
+    ),
+    rewrite_challenges=(
+        "Produce the levels bottom-up without reversing at the end.",
+        "Return only the rightmost {unit} of each level.",
+        "Compare the memory used by this against the depth-first version.",
+    ),
+))
+
+BST_PROPERTY = register(Archetype(
+    key="bst-property",
+    name="Exploiting the search-tree ordering",
+    summary="Use the ordering invariant to skip entire subtrees.",
+    pattern_hint="The ordering guarantee is doing more work than it looks",
+    topics=("tree", "binary-search-tree"),
+    target_time="O(h)",
+    target_space="O(1)",
+    brute_time="O(n)",
+    ladder=LadderTemplate(
+        l1="This is not just a tree — everything left of a {unit} is smaller and "
+           "everything right is larger. Compare {goal} against the root. What does "
+           "that one comparison eliminate?",
+        l2="It eliminates an entire subtree, not one {unit}. Treating this as an "
+           "ordinary tree and visiting everything ignores the one guarantee that makes "
+           "it special.",
+        l3="Each comparison drops roughly half the remaining {unit}s. On a balanced "
+           "tree, how does that change the cost compared with visiting all of them?",
+        l4="Walk down from the root, comparing at each {unit} and descending only into "
+           "the side that can still contain the answer. Some variants also want the "
+           "ordered sequence of values, which this tree gives up for free under a "
+           "particular traversal order — worth knowing which one.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Search the whole tree",
+            idea="Visit every {unit}, ignoring the ordering guarantee.",
+            time="O(n)", space="O(h)",
+        ),
+        ApproachTemplate(
+            name="Ordered descent",
+            idea="Compare at each {unit} and descend into one side only.",
+            time="O(h)", space="O(1)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Validating only against the immediate parent",
+         "why": "the constraint is inherited from every ancestor, not just one",
+         "symptom": "invalid trees accepted when a violation is a level down"},
+        {"mistake": "Assuming the tree is balanced",
+         "why": "a degenerate tree makes the descent linear",
+         "symptom": "correct answers with the expected speed-up absent"},
+        {"mistake": "Mishandling duplicate values",
+         "why": "which side duplicates belong on is a convention the problem sets",
+         "symptom": "inconsistent results when values repeat"},
+    ),
+    failure_cases=(
+        {"mistake": "Checking only that each {unit} sits correctly relative to its parent",
+         "trigger": "a tree where a deep {unit} violates an ancestor's bound but not "
+                    "its parent's",
+         "expected": "invalid",
+         "actual": "valid",
+         "why": "Every {unit} is constrained by a range inherited from all its "
+                "ancestors. Carrying that range down is what makes the check correct."},
+        {"mistake": "Descending both sides out of habit",
+         "trigger": "a large balanced tree",
+         "expected": "a descent proportional to the height",
+         "actual": "a full traversal",
+         "why": "Correct, but it throws away the entire advantage of the structure. "
+                "The comparison exists precisely so one side can be skipped."},
+    ),
+    edge_cases=(
+        "An empty tree",
+        "A single {unit}",
+        "A tree degenerate into a straight line",
+        "Duplicate values",
+    ),
+    rewrite_challenges=(
+        "Produce the values in sorted order without any extra storage.",
+        "Find the closest value to {goal} rather than an exact match.",
+        "State the range invariant each recursive call maintains.",
+    ),
+))
+
+# --- graphs ------------------------------------------------------------------
+
+GRAPH_TRAVERSAL = register(Archetype(
+    key="graph-traversal",
+    name="Graph traversal with a visited set",
+    summary="Explore reachable nodes exactly once, tracking what has been seen.",
+    pattern_hint="Things are connected to each other, possibly in loops",
+    topics=("graph", "depth-first-search", "breadth-first-search"),
+    target_time="O(V+E)",
+    target_space="O(V)",
+    brute_time="unbounded",
+    ladder=LadderTemplate(
+        l1="Unlike a tree, {collection} can loop back on itself. What happens to a "
+           "naive traversal that simply follows every connection it finds?",
+        l2="It revisits {unit}s forever. So you need to record what you have already "
+           "reached. When is the right moment to mark something — when you first see "
+           "it, or when you get around to processing it?",
+        l3="Marking on discovery rather than on processing is what prevents the same "
+           "{unit} being queued several times before it is ever handled. Now: does "
+           "{goal} care about the order you explore in?",
+        l4="Explore outward from each starting point, marking {unit}s as you discover "
+           "them and skipping anything already marked. Every {unit} and every "
+           "connection is handled once. If {goal} depends on distance, explore in "
+           "order of discovery; if it does not, either order works.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Depth-first exploration",
+            idea="Follow each connection as far as it goes before backtracking.",
+            time="O(V+E)", space="O(V)",
+        ),
+        ApproachTemplate(
+            name="Breadth-first exploration",
+            idea="Expand outward evenly, which also yields shortest hop counts.",
+            time="O(V+E)", space="O(V)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Marking a {unit} when processing rather than when discovering",
+         "why": "the same {unit} can be queued many times before being handled",
+         "symptom": "correct answers with badly degraded performance"},
+        {"mistake": "Only exploring from one starting point",
+         "why": "{collection} may be split into disconnected pieces",
+         "symptom": "everything beyond the first component missed"},
+        {"mistake": "Using depth-first for shortest-path questions",
+         "why": "the first route found is not the shortest one",
+         "symptom": "a valid path that is longer than necessary"},
+    ),
+    failure_cases=(
+        {"mistake": "Not marking {unit}s as seen at all",
+         "trigger": "any {collection} containing a loop",
+         "expected": "a terminating traversal",
+         "actual": "an infinite loop or stack overflow",
+         "why": "Without a record of what has been reached, a cycle is followed "
+                "forever. Trees do not need this; graphs always do."},
+        {"mistake": "Starting the traversal only from the first {unit}",
+         "trigger": "a {collection} in two disconnected pieces",
+         "expected": "a result covering both",
+         "actual": "a result covering only the piece containing the start",
+         "why": "Reachability is not the same as membership. Every unvisited {unit} "
+                "has to be considered as a fresh starting point."},
+    ),
+    edge_cases=(
+        "An empty {collection}",
+        "A single {unit} with no connections",
+        "Several disconnected pieces",
+        "A {unit} connected to itself",
+    ),
+    rewrite_challenges=(
+        "Swap depth-first for breadth-first and note what the answer gains or loses.",
+        "Count the connected pieces rather than exploring one.",
+        "Detect whether a cycle exists during the traversal.",
+    ),
+))
+
+TOPOLOGICAL_SORT = register(Archetype(
+    key="topological-sort",
+    name="Topological ordering",
+    summary="Order items so every dependency comes before what needs it.",
+    pattern_hint="Some things must happen before others",
+    topics=("graph", "topological-sort"),
+    target_time="O(V+E)",
+    target_space="O(V)",
+    brute_time="O(V!)",
+    ladder=LadderTemplate(
+        l1="Every {unit} has things that must come before it. Which {unit}s could you "
+           "safely do first, right now, with nothing outstanding?",
+        l2="Exactly those with no outstanding prerequisites. Once you complete one, "
+           "what changes for the {unit}s that were waiting on it?",
+        l3="Their outstanding count drops, and some reach zero and become available. "
+           "So the whole process is: take anything available, complete it, release "
+           "whatever it unblocks. What tells you the ordering is impossible?",
+        l4="Count outstanding prerequisites for every {unit}. Repeatedly take one with "
+           "none left, record it, and decrease the counts of everything depending on "
+           "it. If you record every {unit}, that order is the answer; if you run out "
+           "of available {unit}s early, the remainder contains a cycle.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Try every permutation",
+            idea="Generate orderings until one satisfies all constraints.",
+            time="O(V!)", space="O(V)",
+        ),
+        ApproachTemplate(
+            name="Prerequisite counting",
+            idea="Repeatedly take {unit}s with nothing outstanding and release their "
+                 "dependents.",
+            time="O(V+E)", space="O(V)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Building the dependency direction backwards",
+         "why": "the arrows encode which side must wait",
+         "symptom": "a valid-looking order that is exactly reversed"},
+        {"mistake": "Not detecting a cycle",
+         "why": "a cyclic input has no valid ordering at all",
+         "symptom": "a truncated order returned as if it were complete"},
+        {"mistake": "Decreasing counts for the wrong side of the relation",
+         "why": "only dependents are released by a completion",
+         "symptom": "counts that never reach zero"},
+    ),
+    failure_cases=(
+        {"mistake": "Returning the recorded order without checking its length",
+         "trigger": "an input containing a circular dependency",
+         "expected": "an explicit impossible result",
+         "actual": "a partial order presented as complete",
+         "why": "The loop stops when nothing is available, which happens both on "
+                "success and on a cycle. Only the count of recorded {unit}s "
+                "distinguishes them."},
+        {"mistake": "Reversing the direction of the dependency edges",
+         "trigger": "any input with a strict ordering requirement",
+         "expected": "prerequisites before dependents",
+         "actual": "dependents before prerequisites",
+         "why": "Both directions produce a clean topological order of *some* graph. "
+                "Only one of them is the graph you were given."},
+    ),
+    edge_cases=(
+        "No dependencies at all",
+        "A single chain of dependencies",
+        "A cycle",
+        "Disconnected groups of dependencies",
+    ),
+    rewrite_challenges=(
+        "Detect the cycle and report which {unit}s are involved.",
+        "Produce the lexicographically smallest valid order.",
+        "Solve it with depth-first traversal instead and compare.",
+    ),
+))
+
+UNION_FIND = register(Archetype(
+    key="union-find",
+    name="Disjoint set union",
+    summary="Track group membership under repeated merges.",
+    pattern_hint="Things are being grouped together as you go",
+    topics=("graph", "union-find"),
+    target_time="O(n a(n))",
+    target_space="O(n)",
+    brute_time="O(n^2)",
+    ladder=LadderTemplate(
+        l1="{unit}s get merged into groups as you process {collection}. The only two "
+           "questions you ever ask are whether two {unit}s share a group, and merge "
+           "these two groups. Nothing else.",
+        l2="Re-exploring the connections every time you need an answer works but "
+           "repeats enormous amounts of work. What if each group simply had a single "
+           "designated representative?",
+        l3="Then 'same group' becomes 'same representative', and merging is pointing "
+           "one representative at the other. The danger is the chains getting long. "
+           "What could you do while walking a chain to make later walks shorter?",
+        l4="Give every {unit} a parent, initially itself. The representative is found "
+           "by following parents to the top. Merging points one top at the other. Two "
+           "refinements keep it fast: flatten the chain while walking it, and always "
+           "attach the smaller group beneath the larger.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Re-traverse for each query",
+            idea="Explore {collection} from scratch whenever membership is asked.",
+            time="O(n^2)", space="O(n)",
+        ),
+        ApproachTemplate(
+            name="Disjoint set with flattening",
+            idea="Maintain a representative per group, flattening chains as you find "
+                 "them.",
+            time="O(n a(n))", space="O(n)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Merging the {unit}s rather than their representatives",
+         "why": "it links two members without joining the groups",
+         "symptom": "groups that appear separate despite being merged"},
+        {"mistake": "Skipping both flattening and size-based attachment",
+         "why": "chains degenerate into long lists",
+         "symptom": "correct answers that slow to a crawl on large inputs"},
+        {"mistake": "Counting groups by counting merges",
+         "why": "a merge of two already-joined {unit}s changes nothing",
+         "symptom": "an undercount of the remaining groups"},
+    ),
+    failure_cases=(
+        {"mistake": "Pointing one {unit} at another instead of one root at another",
+         "trigger": "three {unit}s merged in two separate operations",
+         "expected": "a single group of three",
+         "actual": "two groups",
+         "why": "Attaching a member rather than its representative leaves the rest of "
+                "its group behind, still pointing at the old root."},
+        {"mistake": "Decrementing the group count on every merge request",
+         "trigger": "the same pair merged twice",
+         "expected": "the count reduced once",
+         "actual": "the count reduced twice",
+         "why": "A merge only reduces the number of groups when the two were actually "
+                "distinct. The representatives have to be compared first."},
+    ),
+    edge_cases=(
+        "No merges at all",
+        "Every {unit} merged into one group",
+        "The same pair merged repeatedly",
+        "A {unit} merged with itself",
+    ),
+    rewrite_challenges=(
+        "Track the size of each group as merges happen.",
+        "Solve the same problem with a traversal and compare the complexity.",
+        "Explain why flattening makes the amortised cost nearly constant.",
+    ),
+))
+
+# --- backtracking ------------------------------------------------------------
+
+BACKTRACKING = register(Archetype(
+    key="backtracking",
+    name="Backtracking search",
+    summary="Build candidates incrementally and abandon them the moment they fail.",
+    pattern_hint="You are being asked to produce arrangements, not compute a value",
+    topics=("backtracking", "recursion"),
+    target_time="O(branching^depth)",
+    target_space="O(depth)",
+    brute_time="O(branching^depth)",
+    ladder=LadderTemplate(
+        l1="{goal} asks for arrangements rather than a single number, so something "
+           "exponential is unavoidable. The question is only how much of the search "
+           "space you can avoid touching.",
+        l2="Think of building one candidate step by step. At each step you choose from "
+           "a set of options. What makes an option illegal given what you have already "
+           "chosen?",
+        l3="If you can detect illegality as soon as it appears, you never explore "
+           "anything beneath it. That pruning is the whole difference between "
+           "unusable and fast enough.",
+        l4="Extend a partial candidate one choice at a time. When it is complete, "
+           "record it. When it becomes impossible, abandon it immediately. After "
+           "exploring a choice, undo it before trying the next — the state you carry "
+           "must look exactly as it did before that choice was made.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Generate then filter",
+            idea="Produce every arrangement and discard the invalid ones.",
+            time="O(branching^depth)", space="O(branching^depth)",
+        ),
+        ApproachTemplate(
+            name="Backtracking with pruning",
+            idea="Abandon partial candidates as soon as they cannot succeed.",
+            time="much less in practice", space="O(depth)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Not undoing a choice after exploring it",
+         "why": "later branches inherit state they never chose",
+         "symptom": "results containing impossible combinations"},
+        {"mistake": "Recording a reference to the working candidate",
+         "why": "it keeps mutating after being recorded",
+         "symptom": "every recorded result identical, often empty"},
+        {"mistake": "Checking validity only when a candidate is complete",
+         "why": "the entire subtree beneath an invalid prefix is explored for nothing",
+         "symptom": "correct results, catastrophic running time"},
+    ),
+    failure_cases=(
+        {"mistake": "Storing the working candidate rather than a copy of it",
+         "trigger": "any input producing more than one arrangement",
+         "expected": "the distinct arrangements",
+         "actual": "several identical entries, usually empty",
+         "why": "Every recorded entry points at the same mutable object, which the "
+                "search continues to modify and eventually unwinds to empty."},
+        {"mistake": "Forgetting to undo the choice on the way back up",
+         "trigger": "any input with more than one option at the first step",
+         "expected": "arrangements built from independent choices",
+         "actual": "arrangements accumulating choices from sibling branches",
+         "why": "Each branch must start from exactly the state its parent had. "
+                "Undoing is what restores that."},
+    ),
+    edge_cases=(
+        "An empty input",
+        "A single option",
+        "Duplicate options requiring deduplication",
+        "An input where no valid arrangement exists",
+    ),
+    rewrite_challenges=(
+        "Count the arrangements without materialising any of them.",
+        "Add one more pruning rule and measure what it saves.",
+        "Return only the first valid arrangement and stop.",
+    ),
+))
+
+# --- dynamic programming -----------------------------------------------------
+
+DP_LINEAR = register(Archetype(
+    key="dp-linear",
+    name="One-dimensional dynamic programming",
+    summary="Each position's answer is built from a few earlier positions.",
+    pattern_hint="The answer here seems to depend on the answers just before it",
+    topics=("dynamic-programming", "array"),
+    target_time="O(n)",
+    target_space="O(n)",
+    brute_time="O(2^n)",
+    ladder=LadderTemplate(
+        l1="Stand at one position in {collection} and assume every earlier position "
+           "already has its correct answer. Can you work out the answer here from "
+           "those?",
+        l2="Say precisely which earlier positions you need — often just the previous "
+           "one or two. That relationship is the problem; everything after it is "
+           "bookkeeping.",
+        l3="Recursion expressing that relationship directly recomputes the same "
+           "positions enormously often. What would change if each position's answer "
+           "were computed once and kept?",
+        l4="Work forwards, filling in each position from the earlier ones your rule "
+           "names, after settling the first position or two by hand. If the rule only "
+           "reaches back a fixed distance, you do not need to keep the whole table — "
+           "only that many recent values.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Plain recursion",
+            idea="Express the relationship directly and recompute freely.",
+            time="O(2^n)", space="O(n)",
+        ),
+        ApproachTemplate(
+            name="Tabulation",
+            idea="Fill positions in order, each from the earlier ones it depends on.",
+            time="O(n)", space="O(n)",
+        ),
+        ApproachTemplate(
+            name="Rolling values",
+            idea="Keep only the few recent answers the rule actually reaches back to.",
+            time="O(n)", space="O(1)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Wrong or missing base cases",
+         "why": "every later position inherits the error",
+         "symptom": "answers off by a constant everywhere"},
+        {"mistake": "Filling positions in an order that reads unwritten entries",
+         "why": "a dependency must be computed before its dependent",
+         "symptom": "answers built from default values"},
+        {"mistake": "Reducing to rolling values without checking the reach",
+         "why": "the rule may look back further than you kept",
+         "symptom": "correct on small inputs, wrong on larger ones"},
+    ),
+    failure_cases=(
+        {"mistake": "Initialising the table to zero and treating that as computed",
+         "trigger": "an input whose true answer at some position is zero",
+         "expected": "the correct answer",
+         "actual": "an answer that silently used an uncomputed entry",
+         "why": "Zero means both not-yet-computed and legitimately zero. Those need "
+                "to be distinguishable, or the base cases need to be explicit."},
+        {"mistake": "Keeping only the previous value when the rule reaches back two",
+         "trigger": "any input long enough for the second-back dependency to matter",
+         "expected": "the correct answer",
+         "actual": "an answer that drifts as the input grows",
+         "why": "The space reduction is only valid up to the rule's actual reach. "
+                "Check the recurrence before collapsing the table."},
+    ),
+    edge_cases=(
+        "An empty {collection}",
+        "A single {unit}",
+        "Exactly two {unit}s",
+        "All values identical",
+    ),
+    rewrite_challenges=(
+        "Reduce the memory to a constant number of values, and justify why it is safe.",
+        "Reconstruct the choice sequence that produced the answer, not just its value.",
+        "Write the same solution top-down with memoisation and compare.",
+    ),
+))
+
+DP_GRID = register(Archetype(
+    key="dp-grid",
+    name="Two-dimensional dynamic programming",
+    summary="Each cell's answer is built from its neighbours in a fixed direction.",
+    pattern_hint="Two things are varying at once",
+    topics=("dynamic-programming", "matrix"),
+    target_time="O(n*m)",
+    target_space="O(n*m)",
+    brute_time="O(2^(n+m))",
+    ladder=LadderTemplate(
+        l1="The state here needs two numbers to describe, not one. Name them before "
+           "anything else: what exactly does an answer at a given pair of positions "
+           "mean?",
+        l2="With that definition fixed, which neighbouring states does a cell depend "
+           "on? Usually a small, fixed set — directly above, directly left, or "
+           "diagonally back.",
+        l3="Those dependencies dictate the order you must fill the table in: every "
+           "cell a value depends on must already be settled when you reach it. Which "
+           "traversal order guarantees that?",
+        l4="Settle the first row and column by hand, then fill the table in an order "
+           "respecting the dependencies, each cell combining the neighbours your rule "
+           "names. If each row only depends on the one above it, a single row of "
+           "storage is enough.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Exhaustive recursion",
+            idea="Explore every route through the two dimensions.",
+            time="O(2^(n+m))", space="O(n+m)",
+        ),
+        ApproachTemplate(
+            name="Full table",
+            idea="Fill every cell once from its settled neighbours.",
+            time="O(n*m)", space="O(n*m)",
+        ),
+        ApproachTemplate(
+            name="Rolling row",
+            idea="Keep one row when the rule only reaches the previous row.",
+            time="O(n*m)", space="O(m)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "An imprecise definition of what a cell means",
+         "why": "every subsequent decision depends on that definition",
+         "symptom": "a recurrence that almost works"},
+        {"mistake": "Filling in an order that violates the dependencies",
+         "why": "cells get built from unsettled neighbours",
+         "symptom": "answers that change if the loop order is swapped"},
+        {"mistake": "Getting the first row or column wrong",
+         "why": "boundary cells have fewer neighbours",
+         "symptom": "errors concentrated along one edge"},
+    ),
+    failure_cases=(
+        {"mistake": "Overwriting a row in place when the rule needs the old value",
+         "trigger": "any input where a cell depends on the diagonal",
+         "expected": "the correct answer",
+         "actual": "an answer using this row's already-updated value",
+         "why": "Collapsing to one row is only safe if you never need a value the "
+                "update has already destroyed. The diagonal is exactly that value."},
+        {"mistake": "Treating the boundary as if it had all its neighbours",
+         "trigger": "any input, visible immediately in the first row",
+         "expected": "boundary cells computed from their base definition",
+         "actual": "out-of-range access or garbage along the edge",
+         "why": "The first row and column have no predecessors in one direction. They "
+                "are base cases, not general cases."},
+    ),
+    edge_cases=(
+        "One of the dimensions being zero",
+        "A single row or a single column",
+        "A one-by-one input",
+        "Both dimensions at their maximum",
+    ),
+    rewrite_challenges=(
+        "Reduce the storage to a single row and explain why it remains correct.",
+        "Reconstruct the actual path or sequence, not just the value.",
+        "State in one sentence what a cell means, precisely enough to test.",
+    ),
+))
