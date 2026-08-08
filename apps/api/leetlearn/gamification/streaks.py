@@ -3,7 +3,7 @@ small number of freezes that cover a single missed day."""
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 
 from sqlalchemy.orm import Session as DbSession
 
