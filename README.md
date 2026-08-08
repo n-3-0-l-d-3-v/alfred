@@ -3,7 +3,8 @@
 A Duolingo-for-LeetCode coding mentor. It makes you solve the problem yourself
 with a Socratic hint ladder, then — *only after you pass* — opens the full
 teaching surface: every approach, every wrong turn, complexity deep-dives, and
-memed code review. Free, with hard daily caps to keep it that way.
+and a code review that reads what you actually wrote. Free, and it runs
+with no API key at all.
 
 The defensible idea is the **AC gate**: before a passing submission the mentor is
 structurally incapable of emitting solution code; after, everything unlocks.
@@ -64,16 +65,16 @@ Then load `apps/extension/dist/chrome` (or `dist/firefox`) — see
   complexity, robustness, alternatives), always-present "what you did well", a
   **failure gallery** showing the exact input that breaks each common mistake and
   the wrong output it produces, plus rewrite challenges.
-- **Five review personas** — Mentor, Roast, Interviewer, Pragmatist, Professor.
-  Voice changes; findings are identical, so a fun persona is never worse information.
 - **Code-aware hints** — every nudge opens with an observation about what you
   actually wrote, and rungs you've already passed are skipped. Broken code gets
   the parser's complaint instead of a Socratic question about hash maps.
 - **Interview mode** — questions generated from your submission (a hash map gets
   asked about collisions; unmemoised recursion gets asked how big the call tree
   is), with model answers withheld until you commit to your own.
-- **Six personas** that reorder and retitle the whole review, not just the
-  headline — plus tone-gated reaction stamps that soften after a struggle.
+- **Six personas** — Mentor, Deadpan, Roast, Interviewer, Pragmatist, Professor.
+  Each reorders and retitles the whole review, not just the headline; findings
+  are identical, so a fun persona is never worse information. Reaction stamps
+  are tone-gated and soften automatically after a struggle.
 - **A platform seam** — LeetCode today, and a generic paste-anywhere adapter so
   the teaching works on any site or assignment.
 - **Cross-browser extension** — one source, Chrome + Firefox builds, assembled by
@@ -84,17 +85,20 @@ Then load `apps/extension/dist/chrome` (or `dist/firefox`) — see
 ```
 PLAN.md            architecture, cost model, 6-phase roadmap, risks
 apps/
-  api/             FastAPI backend  — built, runnable, 53 tests
-  extension/       Chrome + Firefox MV3 — built, 14 tests
+  api/             FastAPI backend — 323 tests
+  extension/       Chrome + Firefox MV3 — 28 tests
 ```
 
 ## The cost fence (why it can be free)
 
-- Hints are served from **pre-generated Problem Cards** (a DB read), not live LLM
-  calls. Target ≥80% card-hit rate.
-- **Daily caps** in `apps/api/leetlearn/config.py` bound worst-case spend per user:
-  40 free card hints/day, 25 paid LLM calls/day (~$0.15/day worst case at Haiku rates).
-- Card generation for the whole catalog is a **one-time ~$166 Batch job**, not a
-  per-request cost.
+- **Nothing costs anything.** Hints come from Problem Cards (a DB read),
+  personalization comes from static analysis, and reviews are computed offline.
+  With no `ANTHROPIC_API_KEY` set, every feature above still works.
+- Cards are **built from 29 pattern archetypes**, not generated per problem.
+  PLAN.md budgeted a one-time ~$166 batch job for the catalog; the archetype
+  engine replaced it, because the teaching content for a problem is mostly a
+  property of its pattern rather than the problem.
+- **Daily caps** in `apps/api/leetlearn/config.py` bound the worst case if the
+  optional LLM path is ever switched on: 40 card hints/day, 25 model calls/day.
 
 Track `hint_events.source` (`card` vs `llm`) — it's the KPI that governs unit economics.
