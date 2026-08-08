@@ -50,7 +50,9 @@
       ],
       "js": [
         "lib/ext.js",
+        "content/platforms.js",
         "content/leetcode-adapter.js",
+        "content/platform-generic.js",
         "content/content.js"
       ],
       "run_at": "document_idle"

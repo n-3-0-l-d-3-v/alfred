@@ -273,3 +273,29 @@ LL.adapter = {
   SELECTORS,
   LANGUAGE_MAP,
 };
+
+// --- registration through the platform seam ----------------------------------
+
+// The adapter above predates the seam and is kept as-is: it is the most
+// battle-tested code in the project and the reference implementation other
+// platforms are written against. This wrapper is the whole cost of making it
+// pluggable.
+if (LL.platforms) {
+  LL.platforms.register({
+    id: "leetcode",
+    label: "LeetCode",
+    matches: (url) => /(^|\/\/)([a-z]+\.)?leetcode\.com\/problems\//i.test(url),
+    readProblem: () => {
+      const id = readSlug();
+      return id ? { id, title: null } : null;
+    },
+    readCode: async () => {
+      const r = await readCode();
+      // Monaco reports the language alongside the buffer; the DOM path can't,
+      // so the toolbar scrape fills in only when the bridge came up empty.
+      const language = r.language ?? readLanguageFromDom().language;
+      return { ...r, language, languageStrategy: r.language ? "monaco" : "dom" };
+    },
+    readVerdict,
+  });
+}
