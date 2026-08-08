@@ -26,6 +26,7 @@ REQUIRED = [
     "lib/api.js",
     "content/leetcode-adapter.js",
     "content/content.js",
+    "content/page-bridge.js",
     "panel/panel.html",
     "panel/panel.css",
     "panel/panel.js",
@@ -72,6 +73,11 @@ def validate_manifest(path: Path, browser: str) -> list[str]:
     panel = m.get("side_panel", {}).get("default_path") or m.get("sidebar_action", {}).get("default_panel")
     if panel:
         referenced.add(panel)
+    # Injected into the page world at runtime, so it is never listed as a
+    # content script — but it still has to ship, and a missing entry here is a
+    # silent degradation rather than a crash.
+    for entry in m.get("web_accessible_resources", []):
+        referenced.update(entry.get("resources", []))
     for rel in sorted(referenced):
         if not (SRC / rel).exists():
             problems.append(f"{browser}: manifest references missing file '{rel}'")

@@ -5,13 +5,16 @@
 (function () {
   const seen = { verdict: null };
 
+  // Extraction is async now — reading the real editor buffer means a round
+  // trip to the page world. Returning true keeps the message channel open
+  // until the promise settles; without it the panel receives undefined.
   LL.ext.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === "LL_EXTRACT") {
-      sendResponse(LL.adapter.readContext());
+      LL.adapter.readContext().then(sendResponse);
       return true;
     }
     if (msg?.type === "LL_SELFTEST") {
-      sendResponse(LL.adapter.selfTest());
+      LL.adapter.selfTest().then(sendResponse);
       return true;
     }
     return false;

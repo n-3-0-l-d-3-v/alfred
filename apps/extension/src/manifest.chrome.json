@@ -34,5 +34,15 @@
       ],
       "run_at": "document_idle"
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content/page-bridge.js"
+      ],
+      "matches": [
+        "https://leetcode.com/*"
+      ]
+    }
   ]
 }

@@ -56,7 +56,11 @@
     show("main");
 
     try {
-      const s = await LL.api.startSession(ctx.slug, ctx.language);
+      // The adapter reports null when it genuinely could not read the language.
+      // Defaulting here rather than in the adapter keeps the guess visible and
+      // in one place — silently inventing one is what previously sent
+      // "Choose a type" to the API and took static analysis down with it.
+      const s = await LL.api.startSession(ctx.slug, ctx.language ?? "python");
       state.sessionId = s.session_id;
       state.solved = s.solved;
       await Promise.all([loadCard(), loadProgress(), loadPersonas()]);
