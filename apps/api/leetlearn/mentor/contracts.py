@@ -115,7 +115,9 @@ class RichReview(BaseModel):
     try_next: list[str] = []
     next_intro: str = ""
 
-    meme: dict | None = None
+    # A typographic verdict stamp plus one written line. Replaces the old
+    # emoji+caption "meme" field, which read as generated and aged badly.
+    reaction: dict | None = None
     card_verified: bool = True
     source: str = "signals"  # signals (offline) | llm (enriched)
 

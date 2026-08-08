@@ -1,29 +1,71 @@
+/**
+ * LeetLearn panel styling.
+ *
+ * The panel sits directly beside LeetCode, so it uses LeetCode's own palette
+ * rather than a generic one — values read off the live site, not eyeballed:
+ * #1a1a1a page, #f5f5f5 primary text, white-at-60% secondary, and their
+ * difficulty colours (Easy #46c6c2, Medium #ffc01e, Hard #ff375f). Anything
+ * else makes the sidebar read as bolted on.
+ *
+ * Every form control is restyled from scratch. A default OS select or checkbox
+ * next to LeetCode's chrome is the single loudest tell that something was
+ * assembled rather than designed, and the persona picker is the most-used
+ * control in the panel.
+ *
+ * Light mode exists but is secondary: LeetCode's dark theme is the common case
+ * for the people who grind problems at 3am, which is who this is for.
+ */
+
 :root {
-  --bg: #ffffff;
-  --fg: #1a1a1a;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --accent: #2563eb;
-  --accent-fg: #ffffff;
-  --card: #f9fafb;
-  --good: #059669;
-  --warn: #b45309;
-  --bad: #dc2626;
-  --radius: 8px;
+  color-scheme: dark;
+
+  /* Surfaces — LeetCode's dark stack. */
+  --bg: #1a1a1a;
+  --surface: #262626;
+  --surface-hi: #2f2f2f;
+  --line: #ffffff1f;
+  --line-strong: #ffffff33;
+
+  /* Text */
+  --fg: #f5f5f5;
+  --muted: #ffffff99;
+  --faint: #ffffff66;
+
+  /* Brand — LeetCode orange, which is also the icon's colour. */
+  --accent: #ffa116;
+  --accent-dim: #ffa11626;
+  --accent-fg: #1a1a1a;
+
+  /* Semantic — LeetCode's own difficulty/verdict colours. */
+  --easy: #46c6c2;
+  --medium: #ffc01e;
+  --hard: #ff375f;
+  --good: #46c6c2;
+  --warn: #ffc01e;
+  --bad: #ff375f;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --bg: #17181c;
-    --fg: #e8e8ea;
-    --muted: #9aa0aa;
-    --line: #2c2f36;
-    --accent: #4f8cf7;
-    --accent-fg: #0b0c0f;
-    --card: #1f2127;
-    --good: #34d399;
-    --warn: #fbbf24;
-    --bad: #f87171;
+    color-scheme: light;
+    --bg: #ffffff;
+    --surface: #f7f8fa;
+    --surface-hi: #eef0f4;
+    --line: #0000001a;
+    --line-strong: #00000026;
+    --fg: #262626;
+    --muted: #00000099;
+    --faint: #00000066;
+    --accent: #ef7c00;
+    --accent-dim: #ef7c0018;
+    --accent-fg: #ffffff;
+    --easy: #00a09a;
+    --good: #00a09a;
   }
 }
 
@@ -31,17 +73,20 @@
 
 body {
   margin: 0;
-  font: 14px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 14px/1.6 var(--font);
   background: var(--bg);
   color: var(--fg);
   min-width: 320px;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* ---------- header ---------- */
 
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 11px 14px;
   border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
@@ -49,202 +94,382 @@ header {
   z-index: 5;
 }
 
-.brand { display: flex; align-items: center; gap: 7px; font-weight: 650; }
-.logo { color: var(--accent); font-size: 16px; }
-.streak { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
 
-.pane { padding: 12px; }
+/* The ladder from the extension icon, redrawn in CSS so the panel and the
+   toolbar button are unmistakably the same product. */
+.logo {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  width: 18px;
+  height: 18px;
+  padding: 3px;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #ffb02e, #f88b00);
+  font-size: 0;
+}
+.logo::before,
+.logo::after,
+.logo i {
+  content: "";
+  display: block;
+  flex: 1;
+  border-radius: 1px;
+  background: #fff;
+}
+.logo::before { height: 32%; }
+.logo i { height: 58%; }
+.logo::after { height: 84%; }
+
+.streak {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- primitives ---------- */
+
+.pane { padding: 14px; }
 .hidden { display: none !important; }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
 .error { color: var(--bad); font-size: 12.5px; margin-top: 8px; }
-.loading { color: var(--muted); padding: 8px 0; }
+.loading { color: var(--muted); padding: 10px 0; }
 
-input, select, textarea {
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  color: var(--fg);
+}
+
+input,
+textarea {
   width: 100%;
-  padding: 8px 9px;
+  padding: 9px 11px;
   margin: 6px 0;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--bg);
-  color: var(--fg);
-  font: inherit;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
+input::placeholder,
+textarea::placeholder { color: var(--faint); }
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface-hi);
+}
+
+/* Native selects render as OS widgets and look pasted-on. Rebuilt with a
+   drawn chevron so the persona picker matches everything around it. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  padding: 8px 30px 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+select:hover { border-color: var(--line-strong); }
+select option { background: var(--surface); color: var(--fg); }
 
 button {
-  padding: 8px 12px;
-  border-radius: var(--radius);
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
-  background: var(--card);
-  color: var(--fg);
-  font: inherit;
+  background: var(--surface);
   cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.06s ease;
 }
-button:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); width: 100%; }
-button.ghost { background: transparent; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:hover:not(:disabled) { background: var(--surface-hi); border-color: var(--line-strong); }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* problem bar */
+button.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+  width: 100%;
+  font-weight: 600;
+}
+button.primary:hover:not(:disabled) { background: #ffae3a; border-color: #ffae3a; }
+button.ghost { background: transparent; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ---------- problem bar ---------- */
+
 .problem-bar {
-  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 11px 14px;
   border-bottom: 1px solid var(--line);
   font-size: 13px;
 }
-.problem-bar .title { font-weight: 600; }
+.problem-bar .title { font-weight: 600; margin-right: 2px; }
+
 .badge {
   display: inline-block;
   font-size: 11px;
-  padding: 1px 7px;
+  font-weight: 600;
+  padding: 2px 8px;
   border-radius: 999px;
-  border: 1px solid var(--line);
+  background: var(--surface);
   color: var(--muted);
-  margin-left: 6px;
+  letter-spacing: 0.01em;
 }
-.badge.solved { color: var(--good); border-color: var(--good); }
-.badge.unverified { color: var(--warn); border-color: var(--warn); }
+/* LeetCode colours difficulty rather than outlining it — match that. */
+.badge.easy   { color: var(--easy);   background: #46c6c21f; }
+.badge.medium { color: var(--medium); background: #ffc01e1f; }
+.badge.hard   { color: var(--hard);   background: #ff375f1f; }
+.badge.solved { color: var(--easy);   background: #46c6c21f; }
+.badge.unverified { color: var(--warn); background: #ffc01e1f; }
 
-/* tabs */
-.tabs { display: flex; border-bottom: 1px solid var(--line); }
+/* ---------- tabs ---------- */
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  padding: 0 6px;
+  gap: 2px;
+}
 .tab {
   flex: 1;
   border: 0;
   border-radius: 0;
   background: transparent;
-  padding: 9px 4px;
+  padding: 11px 4px 9px;
   font-size: 13px;
+  font-weight: 500;
   color: var(--muted);
   border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
-.tab.active { color: var(--fg); border-bottom-color: var(--accent); font-weight: 600; }
-.tabpane { padding: 12px; }
+.tab:hover:not(.active) { color: var(--fg); background: transparent; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tabpane { padding: 14px; }
 
-/* hints */
+/* ---------- hints ---------- */
+
 .gate-note {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 9px 10px;
+  background: var(--accent-dim);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 10px 12px;
   font-size: 12.5px;
   color: var(--muted);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
+
 .hint {
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 10px 11px;
-  margin-bottom: 8px;
+  padding: 12px 13px;
+  margin-bottom: 9px;
 }
 .hint .lvl {
-  font-size: 11px;
+  font-size: 10.5px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   color: var(--accent);
   font-weight: 700;
-  margin-bottom: 3px;
+  margin-bottom: 5px;
 }
 .hint .report {
-  margin-top: 6px;
+  margin-top: 9px;
   font-size: 11.5px;
-  color: var(--muted);
+  color: var(--faint);
   background: none;
   border: 0;
   padding: 0;
+  font-weight: 400;
   text-decoration: underline;
-  cursor: pointer;
+  text-underline-offset: 2px;
 }
+.hint .report:hover:not(:disabled) { color: var(--muted); background: none; }
 
-/* review */
-.persona-row { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; }
-.persona-row label { font-size: 12px; color: var(--muted); }
+/* ---------- review ---------- */
+
+.persona-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.persona-row label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  font-weight: 600;
+}
 .persona-row select { margin: 0; flex: 1; }
-.persona-row button { padding: 6px 10px; font-size: 12.5px; }
+.persona-row button { padding: 8px 12px; font-size: 12.5px; }
 
 .headline {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
-  margin-bottom: 10px;
-  padding: 10px 11px;
-  background: var(--card);
-  border-radius: var(--radius);
-  border-left: 3px solid var(--accent);
+  line-height: 1.45;
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
 }
 
-.meme {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  background: var(--card);
-  border: 1px dashed var(--line);
-  border-radius: var(--radius);
-  padding: 10px 11px;
-  margin-bottom: 10px;
-}
-.meme .emoji { font-size: 26px; line-height: 1; }
-.meme .caption { font-size: 13px; }
-
-.cx { display: flex; gap: 8px; margin-bottom: 12px; }
-.cx div {
-  flex: 1;
-  background: var(--card);
+/**
+ * Reaction stamp — replaces the emoji-and-caption block.
+ *
+ * A 26px emoji is the cheapest possible signal of "generated", and emoji
+ * reactions age badly. This is a typographic stamp instead: a short verdict
+ * set in mono caps, with the joke carried by the writing. It reads as
+ * deliberate at any zoom and does not depend on a meme format staying current.
+ */
+.reaction {
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 8px;
-  text-align: center;
+  padding: 12px 13px;
+  margin-bottom: 14px;
+  background:
+    linear-gradient(135deg, var(--accent-dim), transparent 60%),
+    var(--surface);
 }
-.cx .k { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-.cx .v { font-weight: 650; font-size: 13px; margin-top: 2px; }
-.cx .v.good { color: var(--good); }
-.cx .v.warn { color: var(--warn); }
-
-section.lens { margin-bottom: 14px; }
-section.lens h3 {
-  font-size: 12px;
+.reaction .stamp {
+  display: inline-block;
+  font: 600 10.5px/1 var(--mono);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-  margin: 0 0 6px;
+  color: var(--accent);
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 4px 7px;
+  margin-bottom: 9px;
 }
-section.lens ul { margin: 0; padding-left: 17px; }
-section.lens li { margin-bottom: 5px; }
+.reaction .stamp.good { color: var(--good); }
+.reaction .stamp.warn { color: var(--warn); }
+.reaction .stamp.bad  { color: var(--bad); }
+.reaction .line { font-size: 13.5px; line-height: 1.5; }
 
-.failure {
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--bad);
-  border-radius: var(--radius);
-  padding: 9px 10px;
-  margin-bottom: 8px;
-  background: var(--card);
-}
-.failure .mistake { font-weight: 600; margin-bottom: 5px; }
-.failure .row { font-size: 12.5px; margin: 2px 0; }
-.failure .row .k { color: var(--muted); display: inline-block; min-width: 62px; }
-.failure code {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-size: 12px;
-}
-.failure .why { margin-top: 5px; font-size: 12.5px; color: var(--muted); }
-
-.locked { text-align: center; padding: 26px 12px; color: var(--muted); }
-
-/* progress */
-.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-.stat {
-  background: var(--card);
+.cx { display: flex; gap: 9px; margin-bottom: 16px; }
+.cx > div {
+  flex: 1;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 10px;
   text-align: center;
 }
-.stat .n { font-size: 20px; font-weight: 700; }
-.stat .l { font-size: 11px; color: var(--muted); }
+.cx .k {
+  font-size: 10px;
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.cx .v {
+  font: 600 14px var(--mono);
+  margin-top: 4px;
+  letter-spacing: -0.01em;
+}
+.cx .v.good { color: var(--good); }
+.cx .v.warn { color: var(--warn); }
 
-.settings { margin-top: 12px; font-size: 12.5px; color: var(--muted); }
-.settings summary { cursor: pointer; }
+section.lens { margin-bottom: 18px; }
+section.lens h3 {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  font-weight: 700;
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+section.lens ul { margin: 0; padding-left: 16px; }
+section.lens li { margin-bottom: 6px; }
+section.lens li::marker { color: var(--faint); }
 
-code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.failure {
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--bad);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 11px 12px;
+  margin-bottom: 9px;
+  background: var(--surface);
+}
+.failure .mistake { font-weight: 600; margin-bottom: 7px; font-size: 13px; }
+.failure .row { font-size: 12.5px; margin: 3px 0; display: flex; gap: 8px; }
+.failure .row .k {
+  color: var(--faint);
+  min-width: 60px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-top: 2px;
+}
+.failure code {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font: 12px var(--mono);
+}
+.failure .why { margin-top: 7px; font-size: 12.5px; color: var(--muted); }
+
+.locked { text-align: center; padding: 34px 14px; color: var(--muted); }
+
+/* ---------- progress ---------- */
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 14px; }
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 10px;
+  text-align: center;
+}
+.stat .n {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.stat .l {
+  font-size: 10.5px;
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+.settings { margin-top: 14px; font-size: 12.5px; color: var(--muted); }
+.settings summary { cursor: pointer; list-style: none; padding: 4px 0; }
+.settings summary::-webkit-details-marker { display: none; }
+.settings summary::before { content: "▸ "; color: var(--faint); }
+.settings[open] summary::before { content: "▾ "; }
+
+code { font-family: var(--mono); }
+
+::selection { background: var(--accent-dim); }
+
+/* Scrollbars are another OS-default tell in a narrow panel. */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 5px; border: 3px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--faint); }

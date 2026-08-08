@@ -5,7 +5,7 @@ import pytest
 
 from leetlearn.analysis import analyze
 from leetlearn.analysis.registry import supported_languages
-from leetlearn.mentor import memes, personas
+from leetlearn.mentor import personas, reactions
 from leetlearn.gamification import progress
 from leetlearn.models import Session
 
@@ -153,38 +153,43 @@ def test_unknown_persona_falls_back_to_mentor(db, user, service):
     assert service.review(s, OPTIMAL, persona="nonsense").persona == "mentor"
 
 
-# --- memes ------------------------------------------------------------------
+# --- reactions ------------------------------------------------------------------
 
 
-def test_meme_softens_when_the_learner_struggled():
+def test_reaction_softens_when_the_learner_struggled():
     """Roast tone must not pile on after a hard session."""
-    clean = memes.pick("nested_loop_when_hashmap_exists", tone="roast", hints_used=0)
-    struggled = memes.pick("nested_loop_when_hashmap_exists", tone="roast", hints_used=4)
+    clean = reactions.pick("nested_loop_when_hashmap_exists", tone="roast", hints_used=0)
+    struggled = reactions.pick("nested_loop_when_hashmap_exists", tone="roast", hints_used=4)
     assert clean.intensity == "spicy"
     assert struggled.intensity == "gentle"
 
 
 def test_encourage_tone_is_always_gentle():
     for hints in (0, 5):
-        m = memes.pick("recursion_no_memo", tone="encourage", hints_used=hints)
+        m = reactions.pick("recursion_no_memo", tone="encourage", hints_used=hints)
         assert m.intensity == "gentle"
 
 
 def test_failed_attempts_also_soften_tone():
-    m = memes.pick("brute_force_accepted", tone="roast", hints_used=0, failed_attempts=4)
+    m = reactions.pick("brute_force_accepted", tone="roast", hints_used=0, failed_attempts=4)
     assert m.intensity == "gentle"
 
 
-def test_every_meme_situation_has_all_intensities():
-    for situation in memes.situations():
+def test_every_reaction_situation_has_all_intensities():
+    for situation in reactions.situations():
         for tone, hints in (("encourage", 0), ("roast", 1), ("roast", 0)):
-            assert memes.pick(situation, tone=tone, hints_used=hints) is not None
+            assert reactions.pick(situation, tone=tone, hints_used=hints) is not None
 
 
-def test_unknown_meme_situation_returns_none():
-    assert memes.pick("no_such_situation") is None
+def test_unknown_reaction_situation_returns_none():
+    assert reactions.pick("no_such_situation") is None
 
 
-def test_review_attaches_a_meme(db, user, service):
+def test_review_attaches_a_reaction(db, user, service):
     s = _solved(db, user)
-    assert service.review(s, BRUTE_FORCE).meme is not None
+    reaction = service.review(s, BRUTE_FORCE).reaction
+    assert reaction is not None
+    # The stamp is the chip; the line is where the writing lives. An emoji-only
+    # reaction is exactly what this replaced, so both have to be present.
+    assert reaction["stamp"] and reaction["line"]
+    assert reaction["tone"] in {"good", "warn", "bad"}

@@ -80,9 +80,12 @@
     state.card = card;
     state.solved = card.solved;
 
+    // LeetCode colours difficulty rather than outlining it; matching that is
+    // most of what makes the panel read as part of the page.
+    const diff = String(card.difficulty || "").toLowerCase();
     $("problemBar").innerHTML =
       `<span class="title">${esc(card.title)}</span>` +
-      `<span class="badge">${esc(card.difficulty)}</span>` +
+      `<span class="badge ${esc(diff)}">${esc(card.difficulty)}</span>` +
       (card.solved ? `<span class="badge solved">solved</span>` : "") +
       (card.verified === false ? `<span class="badge unverified" title="Auto-generated card — report it if it's wrong">unverified</span>` : "");
 
@@ -200,9 +203,14 @@
 
   function renderReview(r) {
     const optimal = r.verdict === "optimal";
-    const meme = r.meme
-      ? `<div class="meme"><div class="emoji">${esc(r.meme.emoji)}</div>
-           <div class="caption">${esc(r.meme.caption)}</div></div>`
+    // A typographic stamp rather than a 26px emoji. The joke lives in the
+    // writing, which ages better than any meme format and doesn't announce
+    // itself as generated.
+    const reaction = r.reaction
+      ? `<div class="reaction">
+           <div class="stamp ${esc(r.reaction.tone)}">${esc(r.reaction.stamp)}</div>
+           <div class="line">${esc(r.reaction.line)}</div>
+         </div>`
       : "";
 
     const lenses = (r.sections ?? [])
@@ -227,7 +235,7 @@
 
     $("reviewOut").innerHTML = `
       <div class="headline">${esc(r.headline)}</div>
-      ${meme}
+      ${reaction}
       <div class="cx">
         <div><div class="k">Yours</div><div class="v ${optimal ? "good" : "warn"}">${esc(r.complexity_time)}</div></div>
         <div><div class="k">Target</div><div class="v">${esc(r.target_time)}</div></div>

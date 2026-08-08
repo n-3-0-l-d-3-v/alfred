@@ -8,7 +8,7 @@ lets reviews stay unlimited even on the free tier.
 from __future__ import annotations
 
 from ..analysis import CodeSignals
-from . import memes, personas
+from . import personas, reactions
 from .cards import ProblemCard
 from .contracts import FailureCase, ReviewSection, RichReview
 
@@ -182,7 +182,7 @@ def build_review(
     else:
         situation = "hint_heavy_solve" if hints_used >= 3 else "clean_solve"
 
-    meme = memes.pick(situation, tone=p.meme_tone, hints_used=hints_used, failed_attempts=failed_attempts)
+    reaction = reactions.pick(situation, tone=p.meme_tone, hints_used=hints_used, failed_attempts=failed_attempts)
 
     # --- what went well (never skip this; a pure fault list teaches badly) ---
     well: list[str] = []
@@ -220,7 +220,7 @@ def build_review(
         what_you_did_well=well,
         try_next=card.rewrite_challenges,
         next_intro=p.next_intro,
-        meme=meme.model_dump() if meme else None,
+        reaction=reaction.model_dump() if reaction else None,
         card_verified=card.verified,
         source="signals",
     )
