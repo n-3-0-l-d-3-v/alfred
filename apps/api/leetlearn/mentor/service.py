@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session as DbSession
 from ..analysis import CodeSignals, analyze
 from ..gamification import budget
 from ..models import HintEvent, Session, User
-from . import personalize
+from . import personalize, probes
 from .cards import CardStore, ProblemCard
 from .contracts import ApproachOut, PostACPayload, PreACHint, RichReview
 from .llm import Mentor
@@ -162,6 +162,43 @@ class HintService:
             hints_used=session.hints_used,
             failed_attempts=failed_attempts,
         )
+
+    # --- interview -----------------------------------------------------------
+
+    def interview(self, session: Session, code: str, limit: int = 4) -> list[dict]:
+        """Questions about this submission, without their answers.
+
+        Answers are withheld until the learner commits to their own — see
+        `interview_answers`. Handing both over at once turns the exercise into
+        reading comprehension, which is not what it is for.
+        """
+        if not session.solved:
+            raise HintGateError(
+                "Interview mode opens after you pass. Defending a solution you "
+                "haven't got yet is just a harder way to ask for a hint."
+            )
+        card = self._require_card(session.slug)
+        signals = analyze(session.language, code)
+        return [
+            {"key": p.key, "question": p.question}
+            for p in probes.generate(card, signals, limit=limit)
+        ]
+
+    def interview_answers(self, session: Session, code: str, limit: int = 4) -> list[dict]:
+        """The model answers, revealed after the learner has committed to theirs."""
+        if not session.solved:
+            raise HintGateError("Interview mode opens after a passing submission.")
+        card = self._require_card(session.slug)
+        signals = analyze(session.language, code)
+        return [
+            {
+                "key": p.key,
+                "question": p.question,
+                "model_answer": p.model_answer,
+                "why_asked": p.why_asked,
+            }
+            for p in probes.generate(card, signals, limit=limit)
+        ]
 
     # --- helpers -------------------------------------------------------------
 

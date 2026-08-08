@@ -257,6 +257,50 @@ def review(
         raise HTTPException(404, "no card for this problem")
 
 
+class InterviewIn(BaseModel):
+    code: str
+    limit: int = 4
+
+
+@app.post("/sessions/{session_id}/interview")
+def interview(
+    session_id: int,
+    body: InterviewIn,
+    user: User = Depends(current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    """Interview questions about this submission. Answers withheld — see below."""
+    s = _load_session(session_id, user, db)
+    try:
+        return {"questions": hints.interview(s, body.code, limit=body.limit)}
+    except HintGateError as e:
+        raise HTTPException(403, str(e))
+    except CardMissingError:
+        raise HTTPException(404, "no card for this problem")
+
+
+@app.post("/sessions/{session_id}/interview/answers")
+def interview_answers(
+    session_id: int,
+    body: InterviewIn,
+    user: User = Depends(current_user),
+    db: DbSession = Depends(get_db),
+) -> dict:
+    """Model answers, fetched once the learner has committed to their own.
+
+    A separate call rather than a field on the previous response: if the answers
+    travel with the questions they are one devtools tab away, and the entire
+    value of the exercise is in answering before you see them.
+    """
+    s = _load_session(session_id, user, db)
+    try:
+        return {"answers": hints.interview_answers(s, body.code, limit=body.limit)}
+    except HintGateError as e:
+        raise HTTPException(403, str(e))
+    except CardMissingError:
+        raise HTTPException(404, "no card for this problem")
+
+
 @app.get("/personas")
 def list_personas() -> dict:
     """Review voices. Findings are identical across personas — only framing changes."""
