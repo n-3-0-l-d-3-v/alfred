@@ -242,3 +242,13 @@ test("selfTest surfaces which strategy produced each field", async () => {
   assert.match(report.language, /python \(via monaco\)/);
   assert.match(report.code, /via monaco/);
 });
+
+test("selfTest reports the adapter version", async () => {
+  // Chrome runs the previously loaded copy of an unpacked extension until you
+  // press reload, so a stale build looks exactly like a failed fix. The stamp
+  // is what tells those two apart from a screenshot.
+  const a = loadAdapter();
+  const report = await a.selfTest();
+  assert.equal(report.adapterVersion, a.VERSION);
+  assert.match(report.adapterVersion, /^\d{4}\.\d{2}\.\d{2}/);
+});

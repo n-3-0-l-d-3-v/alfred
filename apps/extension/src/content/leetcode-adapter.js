@@ -27,6 +27,15 @@
  */
 globalThis.LL = globalThis.LL || {};
 
+/**
+ * Bumped whenever extraction changes. `selfTest()` prints it because Chrome
+ * keeps running the previously loaded copy of an unpacked extension until you
+ * press reload on chrome://extensions — rebuilding `dist/` is not enough.
+ * Without a visible stamp, testing a stale build is indistinguishable from a
+ * fix that did not work, which has already cost one debugging round trip.
+ */
+const ADAPTER_VERSION = "2026.08.08-monaco";
+
 const SELECTORS = {
   // Kept only as a fallback for when the Monaco bridge is unavailable.
   codeLines: [".view-lines", ".monaco-editor .view-lines"],
@@ -236,6 +245,7 @@ async function readContext() {
 async function selfTest() {
   const ctx = await readContext();
   const report = {
+    adapterVersion: ADAPTER_VERSION,
     slug: ctx.slug ?? "FAIL",
     language: ctx.language ? `${ctx.language} (via ${ctx.languageStrategy})` : "FAIL",
     code: ctx.code
@@ -251,6 +261,7 @@ async function selfTest() {
 installBridge();
 
 LL.adapter = {
+  VERSION: ADAPTER_VERSION,
   readSlug,
   readLanguageFromDom,
   readCode,
