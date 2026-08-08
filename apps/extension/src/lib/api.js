@@ -74,7 +74,8 @@ LL.api = (function () {
     },
     logout: () => LL.storage.set({ token: null }),
     isSignedIn: async () => !!(await token()),
-    startSession: (slug, language) => call("/sessions", { method: "POST", body: { slug, language } }),
+    startSession: (slug, language, platform = "leetcode") =>
+      call("/sessions", { method: "POST", body: { slug, language, platform } }),
     hint: (sid, level, code, personalized = false) =>
       call(`/sessions/${sid}/hint`, { method: "POST", body: { level, code, personalized } }),
     verdict: (sid, verdict) => call(`/sessions/${sid}/verdict`, { method: "POST", body: { verdict } }),

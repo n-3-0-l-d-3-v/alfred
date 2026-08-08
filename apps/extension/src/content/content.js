@@ -10,7 +10,7 @@
   // until the promise settles; without it the panel receives undefined.
   LL.ext.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === "LL_EXTRACT") {
-      LL.adapter.readContext().then(sendResponse);
+      LL.platforms.readContext().then(sendResponse);
       return true;
     }
     if (msg?.type === "LL_SELFTEST") {
@@ -23,14 +23,19 @@
   // Watch the result area. LeetCode renders verdicts asynchronously, so poll
   // the DOM via MutationObserver rather than hooking their network layer
   // (which would be brittle and invasive).
+  // Read through the active adapter, not a hardcoded one, so a second platform
+  // gets verdict detection for free rather than needing this file edited.
+  const adapter = () => LL.platforms.forUrl();
+
   const observer = new MutationObserver(() => {
-    const v = LL.adapter.readVerdict();
+    const v = adapter()?.readVerdict() ?? null;
     if (v && v !== seen.verdict) {
       seen.verdict = v;
       LL.sendMessage({
         type: "LL_VERDICT",
         verdict: v,
-        slug: LL.adapter.readSlug(),
+        platform: adapter()?.id ?? null,
+        slug: adapter()?.readProblem()?.id ?? null,
       }).catch(() => {
         /* panel closed — the panel re-reads on open, so nothing is lost */
       });
@@ -45,9 +50,14 @@
     if (location.href !== lastUrl) {
       lastUrl = location.href;
       seen.verdict = null;
-      LL.sendMessage({ type: "LL_NAVIGATED", slug: LL.adapter.readSlug() }).catch(() => {});
+      LL.sendMessage({
+        type: "LL_NAVIGATED",
+        platform: adapter()?.id ?? null,
+        slug: adapter()?.readProblem()?.id ?? null,
+      }).catch(() => {});
     }
   }, 1000);
 
-  console.debug("[LeetLearn] content script ready —", LL.adapter.readSlug());
+  const active = adapter();
+  console.debug("[LeetLearn] content script ready —", active ? active.id : "no adapter", location.href);
 })();

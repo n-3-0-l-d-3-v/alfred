@@ -35,12 +35,15 @@
   }
 
   async function readContext() {
+    // No URL matching here. The content script only runs on pages an adapter
+    // claims, so asking it *is* the check — duplicating a site pattern in the
+    // panel is how the seam silently became LeetCode-only in the first place.
     const tab = await activeTab();
-    if (!tab?.url || !/leetcode\.com\/problems\//.test(tab.url)) return null;
+    if (!tab?.id) return null;
     try {
       return await ext.tabs.sendMessage(tab.id, { type: "LL_EXTRACT" });
     } catch (_) {
-      // content script not injected yet (page loaded before the extension)
+      // No content script on this page, or it loaded before the extension did.
       return null;
     }
   }
@@ -63,7 +66,7 @@
       // Defaulting here rather than in the adapter keeps the guess visible and
       // in one place — silently inventing one is what previously sent
       // "Choose a type" to the API and took static analysis down with it.
-      const s = await LL.api.startSession(ctx.slug, ctx.language ?? "python");
+      const s = await LL.api.startSession(ctx.slug, ctx.language ?? "python", ctx.platform ?? "leetcode");
       state.sessionId = s.session_id;
       state.solved = s.solved;
       await Promise.all([loadCard(), loadProgress(), loadPersonas()]);
