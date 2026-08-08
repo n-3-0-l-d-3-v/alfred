@@ -71,6 +71,8 @@ class GithubLogin(BaseModel):
 class StartSession(BaseModel):
     slug: str
     language: str = "python"
+    # Defaults to leetcode so existing clients keep working unchanged.
+    platform: str = "leetcode"
 
 
 class AnalyzeIn(BaseModel):
@@ -182,11 +184,15 @@ def start_session(body: StartSession, user: User = Depends(current_user), db: Db
 
     s = db.scalar(
         select(Session)
-        .where(Session.user_id == user.id, Session.slug == body.slug)
+        .where(
+            Session.user_id == user.id,
+            Session.platform == body.platform,
+            Session.slug == body.slug,
+        )
         .order_by(Session.id.desc())
     )
     if s is None:
-        s = Session(user_id=user.id, slug=body.slug, language=body.language)
+        s = Session(user_id=user.id, platform=body.platform, slug=body.slug, language=body.language)
         db.add(s)
     elif s.language != body.language:
         s.language = body.language  # they switched language mid-problem
@@ -194,6 +200,7 @@ def start_session(body: StartSession, user: User = Depends(current_user), db: Db
 
     return {
         "session_id": s.id,
+        "platform": s.platform,
         "slug": s.slug,
         "language": s.language,
         "solved": s.solved,

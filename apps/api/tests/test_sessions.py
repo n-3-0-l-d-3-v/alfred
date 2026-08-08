@@ -49,6 +49,27 @@ def test_switching_language_updates_the_existing_session(client, user):
     assert b["language"] == "cpp"
 
 
+def test_the_same_slug_on_two_platforms_gets_two_sessions(client, db, user):
+    """Problem ids are only unique within a site.
+
+    Without the platform in the key, opening "two-sum" on another judge would
+    resume the LeetCode session — inheriting its hint count and its solved
+    state, so a problem you had never seen would already be unlocked.
+    """
+    a = client.post("/sessions", json={"slug": "two-sum", "platform": "leetcode"}, headers=_auth(user)).json()
+    b = client.post("/sessions", json={"slug": "two-sum", "platform": "hackerrank"}, headers=_auth(user)).json()
+
+    assert a["session_id"] != b["session_id"]
+    assert a["platform"] == "leetcode"
+    assert b["platform"] == "hackerrank"
+    assert db.query(Session).filter(Session.slug == "two-sum").count() == 2
+
+
+def test_platform_defaults_to_leetcode_for_older_clients(client, user):
+    r = client.post("/sessions", json={"slug": "two-sum"}, headers=_auth(user)).json()
+    assert r["platform"] == "leetcode"
+
+
 def test_unknown_slug_is_rejected_before_a_session_is_created(client, db, user):
     r = client.post("/sessions", json={"slug": "no-such-problem"}, headers=_auth(user))
     assert r.status_code == 404

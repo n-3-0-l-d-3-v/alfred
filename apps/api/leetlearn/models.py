@@ -59,6 +59,11 @@ class Session(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    # Which site this problem came from. Problem ids are only unique *within* a
+    # platform — HackerRank and LeetCode both have a "two-sum" — so without this
+    # a session on one would resume a session from the other, carrying its hint
+    # count and solved state across. Cheap to add now, a data migration later.
+    platform: Mapped[str] = mapped_column(String(32), default="leetcode", index=True)
     slug: Mapped[str] = mapped_column(String(128), index=True)
     language: Mapped[str] = mapped_column(String(24), default="python")
     started_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
