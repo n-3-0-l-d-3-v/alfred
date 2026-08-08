@@ -20,7 +20,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import re
+
 from ..analysis import CodeSignals
+
+# Python's SyntaxError renders as '... (line 4)'; tree-sitter reports a row.
+_LINE_RE = re.compile(r'(?:line|row)\s+(\d+)', re.I)
 
 # Structures that represent a deliberate lookup/ordering decision, as opposed to
 # a list literal that shows up in nearly every solution and means nothing.
@@ -185,3 +190,36 @@ def unparsed_note(signals: CodeSignals) -> str:
                 "the general one for this problem rather than one about your code.")
     return ("I couldn't parse what's in the editor yet — this hint is the general "
             "one for this problem rather than one about your code.")
+
+
+def syntax_help(signals: CodeSignals) -> str | None:
+    """A supportive, specific note when the code doesn't compile or parse.
+
+    A learner staring at a syntax error does not need a Socratic nudge about
+    hash maps — they need to know the thing is broken and roughly where. Saying
+    so is not giving away the answer: a missing colon is not the algorithm, and
+    withholding it just makes the tool feel oblivious.
+
+    Tone matters here more than anywhere else in the product. This fires exactly
+    when someone is already frustrated, so it names the problem and moves on
+    without commentary about their carefulness.
+    """
+    if signals.parsed or not signals.error:
+        return None
+
+    error = signals.error
+    if "unsupported language" in error:
+        return None  # handled by unparsed_note — not the learner's mistake
+
+    line = ""
+    match = _LINE_RE.search(error)
+    if match:
+        line = f" around line {match.group(1)}"
+
+    detail = error.split(":", 1)[-1].strip() if ":" in error else error
+    return (
+        f"Before anything else — the code doesn't parse yet{line}. "
+        f"The parser says: {detail}. "
+        "Worth fixing that first, because nothing else I say will be about what "
+        "you actually meant to write."
+    )

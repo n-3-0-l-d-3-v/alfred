@@ -109,7 +109,13 @@ class HintService:
         rung = card.hint_ladder.level(served_level)
         nudge = personalize.compose(rung, signals, note) if signals else rung
         if signals and not signals.parsed:
-            nudge = f"{personalize.unparsed_note(signals)} {rung}"
+            # A broken parse has two very different causes. If the code itself
+            # is malformed, say so and point at it — a learner staring at a
+            # syntax error does not need a Socratic question about hash maps.
+            # If we simply couldn't read the language, that's our problem, not
+            # theirs, and the hint should admit it rather than pretend.
+            syntax = personalize.syntax_help(signals)
+            nudge = f"{syntax} {rung}" if syntax else f"{personalize.unparsed_note(signals)} {rung}"
 
         self._record(db, user, session, served_level, source="card", cost=0)
         return PreACHint(
