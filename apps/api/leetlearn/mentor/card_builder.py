@@ -21,6 +21,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from . import archetypes
+from . import archetype_library  # noqa: F401  — registers the archetypes on import
 from .cards import Approach, HintLadder, PatternGuess, ProblemCard
 
 

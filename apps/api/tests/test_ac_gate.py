@@ -19,8 +19,12 @@ def _session(user, slug="two-sum", solved=False):
     return s
 
 
-def test_pre_ac_ladder_is_always_code_free(db, user, service, cards):
+def test_pre_ac_ladder_is_always_code_free(db, user, service, cards, monkeypatch):
     """Every ladder level, for every card in the KB, must be prose (no code)."""
+    # Sweeping the whole KB costs four hint reads per card, which now exceeds a
+    # real user's daily cap — the cap working as designed, not a gate failure.
+    # Lifted here so the test measures the gate rather than the budget.
+    monkeypatch.setattr(service, "_settings_card_cap", lambda: 10_000)
     for slug in cards.slugs():
         s = _session(user, slug)
         db.add(s)

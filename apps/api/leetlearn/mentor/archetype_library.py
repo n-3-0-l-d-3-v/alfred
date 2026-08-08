@@ -1,9 +1,10 @@
 """The archetype definitions themselves.
 
 Split from `archetypes.py` so the machinery stays readable as this file grows
-toward full catalog coverage. Import order matters only in that every archetype
-must be registered before a card referencing it is loaded, which
-`mentor/__init__` guarantees by importing this module.
+toward full catalog coverage. Every archetype must be registered before a card
+referencing it is built, which `card_builder` guarantees by importing this
+module for its side effect — anything building a card needs the registry, so
+that is the honest place to depend on it.
 
 House rules for ladder text, enforced by tests:
   * No code, no pseudocode, no numbered transcribable steps. Prose about

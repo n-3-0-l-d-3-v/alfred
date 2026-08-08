@@ -84,11 +84,30 @@ class CardStore:
         self._cards: dict[str, ProblemCard] = {}
 
     def load_dir(self, directory: Path | None = None) -> "CardStore":
+        """Load hand-written JSON cards, then the archetype-built ones.
+
+        Both sources produce the same validated `ProblemCard`. JSON loads first
+        so a hand-written card wins on slug collision: those are the ones that
+        have been checked line by line, and a generalised archetype should never
+        silently replace a specialist's version of a problem.
+        """
         directory = directory or _CARDS_DIR
         for path in sorted(directory.glob("*.json")):
             raw = json.loads(path.read_text(encoding="utf-8"))
             card = ProblemCard.model_validate(raw)
             self._cards[card.slug] = card
+        self.load_specs()
+        return self
+
+    def load_specs(self, specs=None) -> "CardStore":
+        """Build cards from archetype specializations (see `cards_src`)."""
+        # Imported here rather than at module scope: cards_src imports the card
+        # builder, which imports this module.
+        from ..cards_src import ALL
+        from .card_builder import build_all
+
+        for card in build_all(list(specs) if specs is not None else ALL):
+            self._cards.setdefault(card.slug, card)
         return self
 
     def get(self, slug: str) -> ProblemCard | None:
