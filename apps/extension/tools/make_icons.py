@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Generate the LeetLearn icon set — no Pillow, no npm, no design tool.
 
-The mark is a rising three-rung ladder on a rounded tile. The ladder is the
-product: hints are rungs you climb only as far as you need, and the whole
-premise is that you get there yourself. It also survives being 16 pixels wide,
-which rules out anything more literal — at favicon size a wordmark or a lock is
-mud, but three ascending bars still read as progress.
+The mark is an angular ascending step, cut from a single stroke. It reads as
+both a chevron (code) and a climb (progress) — the product being that hints are
+rungs you take only as far as you need. It survives 16 pixels, which rules out
+anything more literal: at favicon size a wordmark or a padlock is mud.
 
-The tile uses LeetCode's own orange so the extension looks like it belongs
-beside the site rather than pasted on top of it.
+Deliberately adjacent to the coding-site visual family — dark tile, warm amber
+mark, angular geometry — without reproducing anyone's logo. The shape is a
+stepped chevron, which is common visual vocabulary rather than anyone's mark.
+
+Flat fills, no gradient: the surrounding UI dropped gradients for a minimal
+developer-tool look, and an icon that glows next to a flat panel looks like it
+came from somewhere else.
 
 Chrome requires PNG for action icons (Firefox would take SVG, but one format for
 both keeps the build honest), so this writes PNGs directly: a pixel buffer,
@@ -29,18 +33,19 @@ OUT = Path(__file__).resolve().parent.parent / "src" / "icons"
 SIZES = (16, 32, 48, 128)
 SS = 4  # supersampling factor
 
-# LeetCode's brand orange, warmed toward the bottom so the tile has some depth.
-TOP = (0xFF, 0xB0, 0x2E)
-BOTTOM = (0xF8, 0x8B, 0x00)
-RUNG = (0xFF, 0xFF, 0xFF)
+# Flat near-black tile with a muted amber mark. No gradient — see module docstring.
+TILE = (0x18, 0x18, 0x1C)
+MARK = (0xD4, 0xA0, 0x54)
 
 # Geometry as fractions of the tile, so every size is the same drawing.
 CORNER_R = 0.235
-RUNG_XS = (0.250, 0.435, 0.620)
-RUNG_W = 0.130
-RUNG_HS = (0.230, 0.395, 0.560)
-RUNG_BASE = 0.775
-RUNG_R = 0.055
+# Three steps climbing left-to-right, each a short bar plus the riser joining
+# it to the next. Drawn as overlapping rectangles so it stays one solid stroke.
+STEP_XS = (0.195, 0.395, 0.595)
+STEP_YS = (0.596, 0.456, 0.316)
+TREAD_W = 0.210
+STROKE = 0.088
+MARK_R = 0.030
 
 
 def _rounded_rect(x, y, x0, y0, x1, y1, r) -> bool:
@@ -57,12 +62,17 @@ def _sample(u: float, v: float):
     if not _rounded_rect(u, v, 0.0, 0.0, 1.0, 1.0, CORNER_R):
         return None
 
-    for x0, h in zip(RUNG_XS, RUNG_HS):
-        if _rounded_rect(u, v, x0, RUNG_BASE - h, x0 + RUNG_W, RUNG_BASE, RUNG_R):
-            return RUNG
+    for i, (x, y) in enumerate(zip(STEP_XS, STEP_YS)):
+        # the tread
+        if _rounded_rect(u, v, x, y, x + TREAD_W, y + STROKE, MARK_R):
+            return MARK
+        # the riser up to the next tread
+        if i + 1 < len(STEP_XS):
+            rx = x + TREAD_W - STROKE
+            if _rounded_rect(u, v, rx, STEP_YS[i + 1], rx + STROKE, y + STROKE, MARK_R):
+                return MARK
 
-    t = v  # vertical gradient
-    return tuple(round(TOP[i] + (BOTTOM[i] - TOP[i]) * t) for i in range(3))
+    return TILE
 
 
 def render(size: int) -> bytes:
