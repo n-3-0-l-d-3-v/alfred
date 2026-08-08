@@ -15,7 +15,8 @@ lands in one place and propagates to every problem using it.
 from __future__ import annotations
 
 from ..mentor.card_builder import Spec
-from . import arrays_hashing, graphs, sliding_window, stack_and_pointers, trees
+from . import (arrays_hashing, dp_and_backtracking, graphs, sliding_window,
+               stack_and_pointers, trees)
 
 ALL: list[Spec] = [
     *arrays_hashing.SPECS,
@@ -23,4 +24,5 @@ ALL: list[Spec] = [
     *stack_and_pointers.SPECS,
     *trees.SPECS,
     *graphs.SPECS,
+    *dp_and_backtracking.SPECS,
 ]
