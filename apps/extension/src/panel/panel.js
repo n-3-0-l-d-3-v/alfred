@@ -283,6 +283,8 @@
           : ""
       }
 
+      ${r.closer ? `<p class="closer">${esc(r.closer)}</p>` : ""}
+
       ${r.card_verified === false ? `<p class="muted small">This card is auto-generated and unverified. If something's off, use the report link on a hint.</p>` : ""}
     `;
   }

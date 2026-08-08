@@ -114,6 +114,9 @@ class RichReview(BaseModel):
     what_you_did_well: list[str] = []
     try_next: list[str] = []
     next_intro: str = ""
+    # A closing line in the persona's voice, so the review ends deliberately
+    # rather than trailing off after the last bullet.
+    closer: str = ""
 
     # A typographic verdict stamp plus one written line. Replaces the old
     # emoji+caption "meme" field, which read as generated and aged badly.

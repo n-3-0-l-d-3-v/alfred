@@ -146,6 +146,29 @@ def _alternatives_lens(card: ProblemCard, signals: CodeSignals, est: str) -> Rev
     return ReviewSection(lens="alternatives", title="Other ways to solve it", findings=findings)
 
 
+def _voiced_sections(persona, sections: list[ReviewSection]) -> list[ReviewSection]:
+    """Apply the persona's ordering and section titles.
+
+    Order is most of what a voice is: which lens leads says what this reader
+    thinks matters first. An interviewer opening on "what you did well" is not
+    an interviewer.
+    """
+    by_lens = {s.lens: s for s in sections}
+    ordered: list[ReviewSection] = []
+
+    for lens in persona.lens_order:
+        section = by_lens.pop(lens, None)
+        if section is not None:
+            ordered.append(section)
+    ordered.extend(by_lens.values())  # anything the persona didn't rank
+
+    for section in ordered:
+        title = persona.section_titles.get(section.lens)
+        if title:
+            section.title = title
+    return ordered
+
+
 def build_review(
     card: ProblemCard,
     signals: CodeSignals,
@@ -209,17 +232,18 @@ def build_review(
         complexity_time=est,
         complexity_space="(space estimate needs data-flow analysis — Phase 1.5)",
         target_time=target,
-        sections=[
+        sections=_voiced_sections(p, [
             _complexity_lens(signals, est, target),
             _correctness_lens(card, signals),
             _robustness_lens(signals, target),
             _alternatives_lens(card, signals, est),
-        ],
+        ]),
         failure_gallery=[FailureCase(**fc) for fc in card.failure_cases],
         failure_intro=p.failure_intro,
         what_you_did_well=well,
         try_next=card.rewrite_challenges,
         next_intro=p.next_intro,
+        closer=p.closer,
         reaction=reaction.model_dump() if reaction else None,
         card_verified=card.verified,
         source="signals",

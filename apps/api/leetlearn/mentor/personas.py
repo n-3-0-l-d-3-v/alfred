@@ -11,19 +11,33 @@ same underlying findings for a different purpose:
 
 The findings are identical across personas — only voice and framing change, so
 you can never get *wrong* feedback by picking a fun persona.
+
+A persona controls four things, not just a headline:
+
+  * which lens leads. An interviewer opens on what you cannot defend; a
+    pragmatist opens on what will break in production; a professor opens on
+    complexity. Order is most of what a voice *is* — it says what this reader
+    thinks matters first.
+  * what the sections are called.
+  * how the failure gallery and follow-ups are introduced.
+  * how it signs off.
+
+Earlier versions changed only the headline sentence, which meant picking a
+persona changed one line out of forty and the feature read as decorative.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 MENTOR = "mentor"
+DEADPAN = "deadpan"
 ROAST = "roast"
 INTERVIEWER = "interviewer"
 PRAGMATIST = "pragmatist"
 PROFESSOR = "professor"
 
-ALL = [MENTOR, ROAST, INTERVIEWER, PRAGMATIST, PROFESSOR]
+ALL = [MENTOR, DEADPAN, ROAST, INTERVIEWER, PRAGMATIST, PROFESSOR]
 
 
 @dataclass
@@ -39,7 +53,17 @@ class Persona:
     failure_intro: str
     # how the follow-up challenges are introduced
     next_intro: str
-    meme_tone: str  # which tone to request from the meme picker
+    meme_tone: str  # which tone to request from the reaction picker
+
+    # Which lens this voice leads with. Anything omitted keeps its natural
+    # position after the listed ones.
+    lens_order: tuple[str, ...] = ("complexity", "correctness", "robustness", "alternatives")
+    # Per-lens section titles. A voice that calls it "What would break this"
+    # and one that calls it "Adversarial cases" are not the same reader.
+    section_titles: dict[str, str] = field(default_factory=dict)
+    # A closing line, so the review ends in the persona's voice rather than
+    # trailing off after the last bullet.
+    closer: str = ""
 
 
 _PERSONAS: dict[str, Persona] = {
@@ -53,6 +77,9 @@ _PERSONAS: dict[str, Persona] = {
         failure_intro="Here's what would go wrong if you'd made one of the common mistakes:",
         next_intro="When you're ready to go deeper:",
         meme_tone="encourage",
+        lens_order=("complexity", "correctness", "robustness", "alternatives"),
+        section_titles={"robustness": "What would break this"},
+        closer="You solved it. The rest of this is just what to carry into the next one.",
     ),
     ROAST: Persona(
         key=ROAST,
@@ -64,6 +91,14 @@ _PERSONAS: dict[str, Persona] = {
         failure_intro="Ways this could have gone badly (some of them nearly did):",
         next_intro="Prove it wasn't luck:",
         meme_tone="roast",
+        lens_order=("complexity", "robustness", "alternatives", "correctness"),
+        section_titles={
+            "complexity": "The damage",
+            "robustness": "Where it falls over",
+            "alternatives": "What you could have done",
+            "correctness": "Fine, credit where it's due",
+        },
+        closer="Anyway. It passed. Nobody can take that away from you, sadly.",
     ),
     INTERVIEWER: Persona(
         key=INTERVIEWER,
@@ -75,6 +110,15 @@ _PERSONAS: dict[str, Persona] = {
         failure_intro="I'd probe these next — how does your code handle each?",
         next_intro="Follow-ups I'd ask in a real loop:",
         meme_tone="encourage",
+        # An interviewer opens on what you cannot yet defend, not on what went well.
+        lens_order=("robustness", "complexity", "alternatives", "correctness"),
+        section_titles={
+            "robustness": "Where I'd push you",
+            "complexity": "Justify the running time",
+            "alternatives": "What else was on the table",
+            "correctness": "Convince me it's right",
+        },
+        closer="In a real loop, the code is about a third of it. The rest is this conversation.",
     ),
     PRAGMATIST: Persona(
         key=PRAGMATIST,
@@ -86,6 +130,14 @@ _PERSONAS: dict[str, Persona] = {
         failure_intro="Realistic failure modes, ranked by how likely they are to bite in production:",
         next_intro="Worth doing only if you'll hit these cases:",
         meme_tone="encourage",
+        lens_order=("robustness", "correctness", "complexity", "alternatives"),
+        section_titles={
+            "robustness": "When this bites you",
+            "correctness": "Does it actually work",
+            "complexity": "Does the speed matter here",
+            "alternatives": "Options, if you need them",
+        },
+        closer="Good enough is a real engineering answer. Knowing when it stops being good enough is the skill.",
     ),
     PROFESSOR: Persona(
         key=PROFESSOR,
@@ -96,6 +148,36 @@ _PERSONAS: dict[str, Persona] = {
         unparsed="The source could not be parsed; we will reason about the problem abstractly.",
         failure_intro="Cases in which the invariant fails:",
         next_intro="Exercises:",
+        meme_tone="encourage",
+        lens_order=("complexity", "correctness", "alternatives", "robustness"),
+        section_titles={
+            "complexity": "Asymptotic analysis",
+            "correctness": "Correctness argument",
+            "alternatives": "Alternative formulations",
+            "robustness": "Cases in which it degrades",
+        },
+        closer="A solution you cannot explain is a solution you have not finished.",
+    ),
+    DEADPAN: Persona(
+        key=DEADPAN,
+        label="Deadpan",
+        blurb="Dry, funny, never mean. The friend who's amused by the code, not by you.",
+        # The distinction from Roast is the target. Roast is aimed at the
+        # learner; this is aimed at the situation. Same jokes-per-paragraph,
+        # no cost to the person reading it at 2am after four failed submissions.
+        optimal="{est}, which is the target. Genuinely nothing to complain about. I had a whole thing prepared.",
+        suboptimal="{est}. The target is {target}. Those are different numbers, and therein lies our topic.",
+        unparsed="Couldn't parse it. Could be you, could be me, we may never know.",
+        failure_intro="A short tour of adjacent realities where this went badly:",
+        next_intro="If you're feeling brave:",
+        lens_order=("complexity", "robustness", "correctness", "alternatives"),
+        section_titles={
+            "complexity": "How fast, and at what cost",
+            "robustness": "Things that would ruin your afternoon",
+            "correctness": "Evidence it works",
+            "alternatives": "The roads not taken",
+        },
+        closer="That's the review. No notes, mostly.",
         meme_tone="encourage",
     ),
 }

@@ -136,11 +136,36 @@ def test_every_persona_produces_a_distinct_headline(db, user, service):
 
 def test_personas_share_identical_findings(db, user, service):
     """Voice may change; technical findings must not — otherwise picking a fun
-    persona would give you worse information."""
+    persona would give you worse information.
+
+    Compared per lens rather than per position, because a persona reorders the
+    sections and retitles them. That reordering *is* the voice: which lens leads
+    says what this reader thinks matters first. What must not move is the
+    content of any given lens.
+    """
     s = _solved(db, user)
-    baseline = [sec.findings for sec in service.review(s, BRUTE_FORCE, persona="mentor").sections]
+    baseline = {sec.lens: sec.findings for sec in service.review(s, BRUTE_FORCE, persona="mentor").sections}
     for p in personas.ALL:
-        assert [sec.findings for sec in service.review(s, BRUTE_FORCE, persona=p).sections] == baseline
+        got = {sec.lens: sec.findings for sec in service.review(s, BRUTE_FORCE, persona=p).sections}
+        assert got == baseline, f"persona {p} changed the findings, not just the voice"
+
+
+def test_personas_reorder_and_retitle_sections(db, user, service):
+    """The reordering has to be real, or the persona feature is decorative."""
+    s = _solved(db, user)
+    mentor = service.review(s, BRUTE_FORCE, persona="mentor")
+    interviewer = service.review(s, BRUTE_FORCE, persona="interviewer")
+
+    assert [x.lens for x in mentor.sections] != [x.lens for x in interviewer.sections]
+    # An interviewer opens on what you cannot yet defend, not on running time.
+    assert interviewer.sections[0].lens == "robustness"
+    assert [x.title for x in mentor.sections] != [x.title for x in interviewer.sections]
+
+
+def test_every_persona_signs_off(db, user, service):
+    s = _solved(db, user)
+    for p in personas.ALL:
+        assert service.review(s, BRUTE_FORCE, persona=p).closer, f"{p} has no closing line"
 
 
 def test_interviewer_persona_asks_questions(db, user, service):
