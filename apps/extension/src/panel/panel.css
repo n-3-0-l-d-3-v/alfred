@@ -477,6 +477,44 @@ section.lens li::marker { color: var(--faint); }
 
 .locked { text-align: center; padding: 34px 14px; color: var(--muted); }
 
+/* ---------- interview ---------- */
+
+.probe {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 13px;
+  margin-bottom: 12px;
+  background: var(--surface);
+}
+.probe-n {
+  font: 600 10px/1 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+  margin-bottom: 8px;
+}
+.probe-q { font-size: 13.5px; line-height: 1.5; margin-bottom: 10px; }
+.probe-a { margin: 0 0 8px; font-size: 13px; }
+.probe .reveal { width: 100%; font-size: 12.5px; }
+
+/* The model answer, once earned. Set apart from the question so it is obvious
+   which text is yours to write and which is the comparison. */
+.probe-model {
+  margin-top: 10px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line);
+}
+.probe-model p { margin: 0 0 10px; font-size: 13px; line-height: 1.55; }
+.probe-model p:last-child { margin-bottom: 0; }
+.probe-label {
+  font: 700 10px/1 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.probe-label + p + .probe-label { margin-top: 12px; }
+
 /* ---------- progress ---------- */
 
 .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 14px; }

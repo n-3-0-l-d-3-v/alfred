@@ -84,6 +84,13 @@ LL.api = (function () {
         body: { code, persona, failed_attempts: failedAttempts },
       }),
     card: (sid) => call(`/sessions/${sid}/card`),
+    // Two calls on purpose: fetching the answers alongside the questions would
+    // put them one devtools tab away, and answering before you see a good
+    // answer is the only part of the exercise that teaches anything.
+    interview: (sid, code, limit = 4) =>
+      call(`/sessions/${sid}/interview`, { method: "POST", body: { code, limit } }),
+    interviewAnswers: (sid, code, limit = 4) =>
+      call(`/sessions/${sid}/interview/answers`, { method: "POST", body: { code, limit } }),
     unlocked: (sid) => call(`/sessions/${sid}/unlocked`),
     progress: () => call("/progress"),
     personas: () => call("/personas", { auth: false }),

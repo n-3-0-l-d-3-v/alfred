@@ -13,6 +13,9 @@
     hints: [],        // hints revealed this session
     solved: false,
     failedAttempts: 0,
+    // Interview answers are fetched only once the learner has committed, so
+    // they are cached here rather than re-requested per reveal.
+    interview: { questions: [], answers: null, revealed: new Set() },
   };
 
   const esc = (s) =>
@@ -104,6 +107,7 @@
     `;
 
     renderReviewGate();
+    renderInterviewGate();
   }
 
   // ---------- hints ----------
@@ -289,6 +293,107 @@
     `;
   }
 
+  // ---------- interview ----------
+
+  function renderInterviewGate() {
+    $("interviewLocked").classList.toggle("hidden", state.solved);
+    $("interviewBody").classList.toggle("hidden", !state.solved);
+
+    const tab = document.querySelector('.tab[data-tab="interview"]');
+    if (tab) {
+      tab.classList.toggle("locked", !state.solved);
+      tab.title = state.solved
+        ? "Defend your solution"
+        : "Unlocks when you pass — defending a solution you haven't got yet is just a harder way to ask for a hint.";
+    }
+
+    if (state.solved && !state.interview.questions.length) loadInterview();
+  }
+
+  async function loadInterview() {
+    const fresh = await readContext();
+    const code = fresh?.code;
+    if (!code || fresh.codeComplete === false) {
+      $("interviewOut").innerHTML =
+        `<p class="error">I need your full solution to ask anything useful about it.</p>
+         <p class="muted small">Paste it and I'll grill you on what you actually wrote.</p>
+         <textarea id="ivCode" rows="8" placeholder="paste your solution"></textarea>
+         <button id="ivGo" class="primary">Ask me questions</button>`;
+      $("ivGo").addEventListener("click", () => startInterview($("ivCode").value));
+      return;
+    }
+    startInterview(code);
+  }
+
+  async function startInterview(code) {
+    $("interviewOut").innerHTML = `<p class="loading">Reading your code…</p>`;
+    try {
+      const { questions } = await LL.api.interview(state.sessionId, code);
+      state.interview = { questions, answers: null, revealed: new Set(), code };
+      renderInterview();
+    } catch (e) {
+      $("interviewOut").innerHTML = `<p class="error">${esc(e.message)}</p>`;
+    }
+  }
+
+  function renderInterview() {
+    const { questions, revealed } = state.interview;
+    if (!questions.length) {
+      $("interviewOut").innerHTML = `<p class="muted">No questions for this one.</p>`;
+      return;
+    }
+
+    $("interviewOut").innerHTML = questions
+      .map((q, i) => `
+        <div class="probe" data-key="${esc(q.key)}">
+          <div class="probe-n">Question ${i + 1} of ${questions.length}</div>
+          <div class="probe-q">${esc(q.question)}</div>
+          <textarea class="probe-a" rows="4" placeholder="Your answer — no marks, just say what you think"></textarea>
+          <button class="reveal ghost" data-key="${esc(q.key)}">I've answered — show me a good answer</button>
+          <div class="probe-model hidden"></div>
+        </div>`)
+      .join("");
+
+    for (const b of $("interviewOut").querySelectorAll(".reveal")) {
+      b.addEventListener("click", () => reveal(b.dataset.key, b));
+    }
+    for (const key of revealed) {
+      const b = $("interviewOut").querySelector(`.reveal[data-key="${CSS.escape(key)}"]`);
+      if (b) reveal(key, b);
+    }
+  }
+
+  async function reveal(key, button) {
+    // Fetched lazily and once. Requesting answers only after a reveal means an
+    // unrevealed answer was never sent to the browser at all.
+    if (!state.interview.answers) {
+      button.disabled = true;
+      button.textContent = "…";
+      try {
+        const { answers } = await LL.api.interviewAnswers(state.sessionId, state.interview.code);
+        state.interview.answers = answers;
+      } catch (e) {
+        button.disabled = false;
+        button.textContent = "couldn't load — try again";
+        return;
+      }
+    }
+
+    const answer = state.interview.answers.find((a) => a.key === key);
+    if (!answer) return;
+
+    state.interview.revealed.add(key);
+    const probe = button.closest(".probe");
+    const target = probe.querySelector(".probe-model");
+    target.classList.remove("hidden");
+    target.innerHTML = `
+      <div class="probe-label">A good answer</div>
+      <p>${esc(answer.model_answer)}</p>
+      <div class="probe-label">Why this gets asked</div>
+      <p class="muted small">${esc(answer.why_asked)}</p>`;
+    button.remove();
+  }
+
   // ---------- progress ----------
 
   async function loadProgress() {
@@ -325,7 +430,8 @@
       } catch (_) {}
     }
     if (msg?.type === "LL_NAVIGATED") {
-      Object.assign(state, { ctx: null, sessionId: null, card: null, hints: [], solved: false, failedAttempts: 0 });
+      Object.assign(state, { ctx: null, sessionId: null, card: null, hints: [], solved: false, failedAttempts: 0,
+        interview: { questions: [], answers: null, revealed: new Set() } });
       $("hintList").innerHTML = "";
       $("reviewOut").innerHTML = "";
       boot();
@@ -347,6 +453,7 @@
     for (const p of document.querySelectorAll(".tabpane")) p.classList.toggle("hidden", p.id !== `tab-${name}`);
     if (name === "progress") loadProgress();
     if (name === "review") renderReviewGate();
+    if (name === "interview") renderInterviewGate();
   }
 
   document.addEventListener("DOMContentLoaded", async () => {

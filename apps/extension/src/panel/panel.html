@@ -49,6 +49,7 @@
         <button class="tab active" data-tab="understand">Understand</button>
         <button class="tab" data-tab="hints">Hints</button>
         <button class="tab" data-tab="review">Review</button>
+        <button class="tab" data-tab="interview">Grill me</button>
         <button class="tab" data-tab="progress">You</button>
       </nav>
 
@@ -85,6 +86,25 @@
             <button id="rerun" class="ghost">Re-run</button>
           </div>
           <div id="reviewOut"></div>
+        </div>
+      </div>
+
+      <!-- INTERVIEW -->
+      <div class="tabpane hidden" id="tab-interview">
+        <div id="interviewLocked" class="locked">
+          <p><strong>Locked until you pass.</strong></p>
+          <p class="muted small">
+            Then I ask you the things an interviewer would — about the code you
+            actually wrote, not the problem in general.
+          </p>
+        </div>
+        <div id="interviewBody" class="hidden">
+          <div class="gate-note">
+            Answer in your own words first, then reveal. Committing to an answer
+            before you see a good one is the entire exercise — reading the
+            answer straight off does nothing.
+          </div>
+          <div id="interviewOut" class="loading">Loading…</div>
         </div>
       </div>
 
