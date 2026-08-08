@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session as DbSession
 from ..analysis import CodeSignals, analyze
 from ..gamification import budget
 from ..models import HintEvent, Session, User
+from . import personalize
 from .cards import CardStore, ProblemCard
 from .contracts import ApproachOut, PostACPayload, PreACHint, RichReview
 from .llm import Mentor
@@ -87,18 +88,34 @@ class HintService:
                     return nudge
             # fall through to the free card path if capped or the call failed
 
-        # --- free card path ---
+        # --- free card path, personalized against their actual code ---
         cap = self._settings_card_cap()
         if not budget.remaining(db, user.id, "card", cap):
             raise BudgetError(
                 f"You've used all {cap} hint reads today. They refresh tomorrow — "
                 "or solve a problem clean to earn breathing room."
             )
-        self._record(db, user, session, level, source="card", cost=0)
+
+        # The card supplies the teaching; the learner's code decides which rung
+        # they get and how it opens. Without this the ladder reads like a
+        # printed solutions manual — the same four sentences for everyone, in
+        # the same order, regardless of what is on screen.
+        signals = analyze(session.language, code) if code else None
+        served_level, note = (
+            personalize.suggest_level(signals, level, session.hints_used)
+            if signals
+            else (level, None)
+        )
+        rung = card.hint_ladder.level(served_level)
+        nudge = personalize.compose(rung, signals, note) if signals else rung
+        if signals and not signals.parsed:
+            nudge = f"{personalize.unparsed_note(signals)} {rung}"
+
+        self._record(db, user, session, served_level, source="card", cost=0)
         return PreACHint(
-            level=level,
+            level=served_level,
             kind="ladder",
-            nudge=card.hint_ladder.level(level),
+            nudge=nudge,
             source="card",
             hints_remaining_today=budget.remaining(db, user.id, "card", cap),
         )
