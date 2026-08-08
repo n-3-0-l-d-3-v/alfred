@@ -1,48 +1,50 @@
 /**
  * LeetLearn panel styling.
  *
- * The panel sits directly beside LeetCode, so it uses LeetCode's own palette
- * rather than a generic one — values read off the live site, not eyeballed:
- * #1a1a1a page, #f5f5f5 primary text, white-at-60% secondary, and their
- * difficulty colours (Easy #46c6c2, Medium #ffc01e, Hard #ff375f). Anything
- * else makes the sidebar read as bolted on.
+ * Minimal developer-tool aesthetic, not a themed skin of any host site. The
+ * panel will sit beside LeetCode today and other practice sites later, so
+ * borrowing one site's palette would make it look wrong everywhere else — and
+ * copying a host's colours reads as a cheap imitation rather than a product.
  *
- * Every form control is restyled from scratch. A default OS select or checkbox
- * next to LeetCode's chrome is the single loudest tell that something was
- * assembled rather than designed, and the persona picker is the most-used
- * control in the panel.
- *
- * Light mode exists but is secondary: LeetCode's dark theme is the common case
- * for the people who grind problems at 3am, which is who this is for.
+ * The rules this follows:
+ *   * No gradients, no glow, no coloured shadows. Flat surfaces, 1px hairlines.
+ *   * Near-neutral greys carry the layout; colour appears only where it means
+ *     something (a verdict, a difficulty, a warning).
+ *   * One restrained accent — a muted amber, warm enough to have personality,
+ *     desaturated enough not to shout at 2am.
+ *   * Every form control rebuilt. A native OS select is the loudest possible
+ *     tell that something was assembled rather than designed.
+ *   * Type does the work: tight tracking on headings, mono for anything
+ *     measured, generous line height for anything read.
  */
 
 :root {
   color-scheme: dark;
 
-  /* Surfaces — LeetCode's dark stack. */
-  --bg: #1a1a1a;
-  --surface: #262626;
-  --surface-hi: #2f2f2f;
-  --line: #ffffff1f;
-  --line-strong: #ffffff33;
+  /* Surfaces — near-neutral, flat, low contrast between steps. */
+  --bg: #0e0e10;
+  --surface: #161619;
+  --surface-hi: #1d1d21;
+  --line: #ffffff14;
+  --line-strong: #ffffff26;
 
   /* Text */
-  --fg: #f5f5f5;
-  --muted: #ffffff99;
-  --faint: #ffffff66;
+  --fg: #ececf1;
+  --muted: #9b9ba6;
+  --faint: #6c6c78;
 
-  /* Brand — LeetCode orange, which is also the icon's colour. */
-  --accent: #ffa116;
-  --accent-dim: #ffa11626;
-  --accent-fg: #1a1a1a;
+  /* One accent. Muted amber — matches the icon, no glow. */
+  --accent: #d4a054;
+  --accent-dim: #d4a05418;
+  --accent-fg: #0e0e10;
 
-  /* Semantic — LeetCode's own difficulty/verdict colours. */
-  --easy: #46c6c2;
-  --medium: #ffc01e;
-  --hard: #ff375f;
-  --good: #46c6c2;
-  --warn: #ffc01e;
-  --bad: #ff375f;
+  /* Semantic, desaturated on purpose. These appear on small elements only. */
+  --easy: #5d9e86;
+  --medium: #c2953f;
+  --hard: #c2665f;
+  --good: #5d9e86;
+  --warn: #c2953f;
+  --bad: #c2665f;
 
   --radius: 10px;
   --radius-sm: 6px;
@@ -58,14 +60,14 @@
     --surface-hi: #eef0f4;
     --line: #0000001a;
     --line-strong: #00000026;
-    --fg: #262626;
+    --fg: #1c1c1f;
     --muted: #00000099;
     --faint: #00000066;
-    --accent: #ef7c00;
-    --accent-dim: #ef7c0018;
+    --accent: #9a6f22;
+    --accent-dim: #9a6f2214;
     --accent-fg: #ffffff;
-    --easy: #00a09a;
-    --good: #00a09a;
+    --easy: #3d7a63;
+    --good: #3d7a63;
   }
 }
 
@@ -102,31 +104,44 @@ header {
   letter-spacing: -0.01em;
 }
 
-/* The ladder from the extension icon, redrawn in CSS so the panel and the
-   toolbar button are unmistakably the same product. */
+/* The stair from the extension icon, redrawn in CSS so the panel and the
+   toolbar button are unmistakably the same product. Flat, matching the icon. */
 .logo {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 2px;
+  position: relative;
+  display: inline-block;
   width: 18px;
   height: 18px;
-  padding: 3px;
   border-radius: 5px;
-  background: linear-gradient(180deg, #ffb02e, #f88b00);
+  background: #18181c;
+  border: 1px solid var(--line);
   font-size: 0;
 }
 .logo::before,
 .logo::after,
 .logo i {
   content: "";
-  display: block;
-  flex: 1;
+  position: absolute;
+  height: 2px;
   border-radius: 1px;
-  background: #fff;
+  background: var(--accent);
 }
-.logo::before { height: 32%; }
-.logo i { height: 58%; }
-.logo::after { height: 84%; }
+.logo::before { width: 6px; left: 3px;  bottom: 4px; }
+.logo i       { width: 6px; left: 6px;  bottom: 7px; }
+.logo::after  { width: 6px; left: 9px;  bottom: 10px; }
+
+/* Where the wordmark used to be. The side panel host already shows the
+   extension name in its own title bar, so repeating it wasted the most
+   valuable row in a 380px-wide surface. This says what you are looking at. */
+.context {
+  font-size: 12.5px;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 210px;
+}
 
 .streak {
   font-size: 12px;
@@ -214,7 +229,7 @@ button.primary {
   width: 100%;
   font-weight: 600;
 }
-button.primary:hover:not(:disabled) { background: #ffae3a; border-color: #ffae3a; }
+button.primary:hover:not(:disabled) { background: #e0ae62; border-color: #e0ae62; }
 button.ghost { background: transparent; }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -237,16 +252,18 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--surface);
+  background: transparent;
+  border: 1px solid var(--line-strong);
   color: var(--muted);
   letter-spacing: 0.01em;
 }
-/* LeetCode colours difficulty rather than outlining it — match that. */
-.badge.easy   { color: var(--easy);   background: #46c6c21f; }
-.badge.medium { color: var(--medium); background: #ffc01e1f; }
-.badge.hard   { color: var(--hard);   background: #ff375f1f; }
-.badge.solved { color: var(--easy);   background: #46c6c21f; }
-.badge.unverified { color: var(--warn); background: #ffc01e1f; }
+/* Colour only on the label; the outline stays neutral so a row of badges
+   reads as one system rather than a set of stickers. */
+.badge.easy   { color: var(--easy); }
+.badge.medium { color: var(--medium); }
+.badge.hard   { color: var(--hard); }
+.badge.solved { color: var(--easy); }
+.badge.unverified { color: var(--warn); }
 
 /* ---------- tabs ---------- */
 
@@ -268,7 +285,24 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   border-bottom: 2px solid transparent;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
-.tab:hover:not(.active) { color: var(--fg); background: transparent; }
+.tab:hover:not(.active):not(.locked) { color: var(--fg); background: transparent; }
+
+/* A tab you cannot open yet. Shown rather than hidden: the point of the AC
+   gate is that the learner knows there is something waiting for them, and that
+   solving it themselves is what opens it. */
+.tab.locked { color: var(--faint); cursor: not-allowed; }
+.tab.locked::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 8px;
+  margin-left: 5px;
+  vertical-align: -1px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+  border-top-color: transparent;
+  box-shadow: inset 0 -3px 0 -1px currentColor;
+}
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 .tabpane { padding: 14px; }
 
@@ -346,9 +380,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   border-radius: var(--radius);
   padding: 12px 13px;
   margin-bottom: 14px;
-  background:
-    linear-gradient(135deg, var(--accent-dim), transparent 60%),
-    var(--surface);
+  background: var(--surface);
 }
 .reaction .stamp {
   display: inline-block;

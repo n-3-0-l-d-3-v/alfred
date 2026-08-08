@@ -82,6 +82,7 @@
 
     // LeetCode colours difficulty rather than outlining it; matching that is
     // most of what makes the panel read as part of the page.
+    $("contextLabel").textContent = card.title || state.ctx?.slug || "";
     const diff = String(card.difficulty || "").toLowerCase();
     $("problemBar").innerHTML =
       `<span class="title">${esc(card.title)}</span>` +
@@ -173,12 +174,39 @@
   function renderReviewGate() {
     $("reviewLocked").classList.toggle("hidden", state.solved);
     $("reviewBody").classList.toggle("hidden", !state.solved);
+
+    // The tab itself is marked locked, not just its contents. The AC gate only
+    // works as motivation if the learner can see there is something waiting
+    // and that solving it themselves is what opens it.
+    const tab = document.querySelector('.tab[data-tab="review"]');
+    if (tab) {
+      tab.classList.toggle("locked", !state.solved);
+      tab.title = state.solved
+        ? "Your code review"
+        : "Unlocks when you get a passing submission — that's the whole point.";
+    }
+
     if (state.solved && !$("reviewOut").innerHTML) runReview();
   }
 
   async function runReview() {
     const fresh = await readContext();
     const code = fresh?.code;
+
+    // Partial code produces confidently wrong conclusions: a truncated buffer
+    // has no loops in it, so the analyser reports O(1) and the review tells the
+    // learner their solution is optimal. Refusing is the honest option.
+    if (code && fresh.codeComplete === false) {
+      $("reviewOut").innerHTML =
+        `<p class="error">I could only read part of your editor, so any complexity
+          claim I made would be wrong.</p>
+         <p class="muted small">Paste your full solution and I'll review it properly.</p>
+         <textarea id="manualCode" rows="8" placeholder="paste your solution"></textarea>
+         <button id="manualGo" class="primary">Review this</button>`;
+      $("manualGo").addEventListener("click", () => reviewWith($("manualCode").value));
+      return;
+    }
+
     if (!code) {
       $("reviewOut").innerHTML =
         `<p class="error">Couldn't read your code from the editor.</p>
@@ -305,6 +333,14 @@
   // ---------- tabs & wiring ----------
 
   function switchTab(name) {
+    // Bounce the learner back to Hints rather than showing an empty locked
+    // pane — the useful thing pre-AC is the ladder.
+    const target = document.querySelector(`.tab[data-tab="${name}"]`);
+    if (target?.classList.contains("locked")) {
+      $("hintError").textContent =
+        "The review unlocks once you pass. Until then the hints are the help — that's the deal.";
+      name = "hints";
+    }
     for (const t of document.querySelectorAll(".tab")) t.classList.toggle("active", t.dataset.tab === name);
     for (const p of document.querySelectorAll(".tabpane")) p.classList.toggle("hidden", p.id !== `tab-${name}`);
     if (name === "progress") loadProgress();
