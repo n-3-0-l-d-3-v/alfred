@@ -477,6 +477,64 @@ section.lens li::marker { color: var(--faint); }
 
 .locked { text-align: center; padding: 34px 14px; color: var(--muted); }
 
+/* ---------- the post-AC firehose ---------- */
+
+/* Collapsed by default. It is the largest block in the panel, and the review is
+   what people came for — this is the reference they open when they want it. */
+.unlocked {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.unlocked > summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  padding: 4px 0;
+}
+.unlocked > summary::-webkit-details-marker { display: none; }
+.unlocked > summary::before { content: "▸ "; }
+.unlocked[open] > summary::before { content: "▾ "; }
+
+.approach {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 11px 12px;
+  margin: 10px 0;
+  background: var(--surface);
+}
+.approach-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.approach-name { font-weight: 600; font-size: 13px; }
+.approach-cx {
+  font: 11px var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+}
+/* Code is the one place a horizontal scrollbar is correct — wrapping a
+   solution changes what it looks like, and people compare these by shape. */
+.approach-code {
+  margin: 9px 0 0;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  font: 12px/1.5 var(--mono);
+}
+.approach-code code { white-space: pre; }
+
+.cx-list { list-style: none; padding-left: 0; }
+.cx-list li { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; }
+.cx-list code { font-size: 12px; }
+
 /* ---------- interview ---------- */
 
 .probe {

@@ -190,6 +190,7 @@
         : "Unlocks when you get a passing submission — that's the whole point.";
     }
 
+    $("unlockedWrap").classList.toggle("hidden", !state.solved);
     if (state.solved && !$("reviewOut").innerHTML) runReview();
   }
 
@@ -290,6 +291,57 @@
       ${r.closer ? `<p class="closer">${esc(r.closer)}</p>` : ""}
 
       ${r.card_verified === false ? `<p class="muted small">This card is auto-generated and unverified. If something's off, use the report link on a hint.</p>` : ""}
+    `;
+  }
+
+  // ---------- the post-AC firehose ----------
+
+  async function loadUnlocked() {
+    // Rendered once. The payload is entirely card content, so it cannot change
+    // between opens the way the review can.
+    if ($("unlockedOut").dataset.loaded) return;
+    try {
+      const u = await LL.api.unlocked(state.sessionId);
+      $("unlockedOut").dataset.loaded = "1";
+      $("unlockedOut").innerHTML = renderUnlocked(u);
+    } catch (e) {
+      $("unlockedOut").innerHTML = `<p class="error">${esc(e.message)}</p>`;
+    }
+  }
+
+  function renderUnlocked(u) {
+    const approaches = (u.approaches ?? [])
+      .map(
+        (a) => `
+        <div class="approach">
+          <div class="approach-head">
+            <span class="approach-name">${esc(a.name)}</span>
+            <span class="approach-cx">${esc(a.time)} · ${esc(a.space)}</span>
+          </div>
+          <p class="muted small">${esc(a.idea)}</p>
+          ${a.code ? `<pre class="approach-code"><code>${esc(a.code)}</code></pre>` : ""}
+        </div>`
+      )
+      .join("");
+
+    const pitfalls = (u.pitfalls ?? [])
+      .map(
+        (p) => `<li><strong>${esc(p.mistake)}</strong> — ${esc(p.why)}
+                ${p.symptom ? `<span class="muted small">(${esc(p.symptom)})</span>` : ""}</li>`
+      )
+      .join("");
+
+    const cx = Object.entries(u.complexity ?? {})
+      .map(([k, v]) => `<li><span class="muted">${esc(k.replace(/_/g, " "))}</span> <code>${esc(v)}</code></li>`)
+      .join("");
+
+    return `
+      ${approaches}
+      ${cx ? `<section class="lens"><h3>Complexity</h3><ul class="cx-list">${cx}</ul></section>` : ""}
+      ${pitfalls ? `<section class="lens"><h3>Common pitfalls</h3><ul>${pitfalls}</ul></section>` : ""}
+      ${(u.edge_cases ?? []).length
+        ? `<section class="lens"><h3>Edge cases</h3><ul>${u.edge_cases.map((e) => `<li>${esc(e)}</li>`).join("")}</ul></section>`
+        : ""}
     `;
   }
 
@@ -510,6 +562,12 @@
     $("signout").addEventListener("click", async () => {
       await LL.api.logout();
       show("auth");
+    });
+
+    // Loaded on first expand rather than with the review: it is the largest
+    // payload in the panel and most people read the review first.
+    $("unlockedWrap").addEventListener("toggle", () => {
+      if ($("unlockedWrap").open) loadUnlocked();
     });
 
     $("nextHint").addEventListener("click", nextHint);
