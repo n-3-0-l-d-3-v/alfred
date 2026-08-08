@@ -15,10 +15,11 @@ full architecture, cost model, and phased roadmap.
 | Phase | | |
 |---|---|---|
 | 0 — Foundation | 🟢 done | API, GitHub OAuth → JWT, Alembic migrations, Postgres, Docker, Fly config, CI-ready tests. |
-| 1 — The brain | 🟡 in progress | 5-language parsing, AC gate, personas, memes, failure gallery, offline review all done. **The card KB is still only 2 problems** — the archetype engine and NeetCode 150 are the active work. |
-| 2 — Extension MVP | 🟡 built, needs live validation | Chrome + Firefox builds load; DOM selectors need checking against real LeetCode. |
+| 1 — The brain | 🟢 mostly done | 5-language parsing, AC gate, six personas, reactions, failure gallery, code-aware hints and review. 29 pattern archetypes; **31 cards and growing** toward the NeetCode 150. |
+| 2 — Extension MVP | 🟢 validated on live LeetCode | Reads the editor through Monaco, not DOM scraping. Interview mode and the post-AC gallery are wired. |
+| 3 — Progression | 🔴 not started | Mastery model, hint tapering, spaced repetition, adaptive recommender. |
 
-**89 tests green** — 75 Python + 14 JavaScript.
+**351 tests green** — 323 Python + 28 JavaScript.
 
 **What works end to end today** (no API key needed): sign in → open a LeetCode
 problem → Socratic hint ladder L1–L4 → the AC gate blocks the full solution →
@@ -65,8 +66,16 @@ Then load `apps/extension/dist/chrome` (or `dist/firefox`) — see
   the wrong output it produces, plus rewrite challenges.
 - **Five review personas** — Mentor, Roast, Interviewer, Pragmatist, Professor.
   Voice changes; findings are identical, so a fun persona is never worse information.
-- **Tone-gated memes** — curated library, and a roast automatically softens to
-  gentle after a struggle (3+ hints or 3+ failed attempts).
+- **Code-aware hints** — every nudge opens with an observation about what you
+  actually wrote, and rungs you've already passed are skipped. Broken code gets
+  the parser's complaint instead of a Socratic question about hash maps.
+- **Interview mode** — questions generated from your submission (a hash map gets
+  asked about collisions; unmemoised recursion gets asked how big the call tree
+  is), with model answers withheld until you commit to your own.
+- **Six personas** that reorder and retitle the whole review, not just the
+  headline — plus tone-gated reaction stamps that soften after a struggle.
+- **A platform seam** — LeetCode today, and a generic paste-anywhere adapter so
+  the teaching works on any site or assignment.
 - **Cross-browser extension** — one source, Chrome + Firefox builds, assembled by
   a Python script so there's no Node/npm build toolchain.
 
