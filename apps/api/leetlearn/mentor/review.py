@@ -44,8 +44,21 @@ def _complexity_lens(signals: CodeSignals, est: str, target: str) -> ReviewSecti
 
 def _correctness_lens(card: ProblemCard, signals: CodeSignals) -> ReviewSection:
     findings = []
-    if signals.parsed and signals.early_exit:
-        findings.append("Early exit on a match — good, no wasted iterations after the answer is found.")
+    if signals.parsed:
+        if signals.early_exit:
+            findings.append(
+                "You return as soon as the answer is found rather than finishing the "
+                "scan — no wasted iterations after the result is known."
+            )
+        else:
+            findings.append(
+                "There's no early exit — the loop runs to completion even once the "
+                "answer is determined. Correct, and on this problem cheap, but worth "
+                "noticing as a habit."
+            )
+        if signals.functions:
+            named = ", ".join(sorted(signals.functions)[:3])
+            findings.append(f"Structure: {len(signals.functions)} function(s) — {named}.")
     if card.edge_cases:
         findings.append(
             "Worth re-checking against these: " + "; ".join(card.edge_cases[:4]) + "."
@@ -77,10 +90,59 @@ def _robustness_lens(signals: CodeSignals, target: str) -> ReviewSection:
     return ReviewSection(lens="robustness", title="What would break this", findings=findings)
 
 
-def _alternatives_lens(card: ProblemCard) -> ReviewSection:
-    findings = [
-        f"{a.name} — {a.idea} ({a.time} time, {a.space} space)" for a in card.approaches
-    ]
+def _match_approach(card: ProblemCard, signals: CodeSignals, est: str):
+    """Which of the card's approaches does this code actually resemble?
+
+    Listing every approach identically regardless of what the learner wrote is
+    what makes the section read like a textbook appendix. Knowing which one they
+    took is what turns it into "here is what the other one buys you."
+    """
+    if not signals.parsed:
+        return None
+
+    has_lookup = any(d.lower() in {"dict", "set", "map", "counter", "defaultdict"}
+                     for d in signals.data_structures)
+
+    for approach in card.approaches:
+        name = approach.name.lower()
+        if signals.max_loop_depth >= 2 and ("brute" in name or "every pair" in name):
+            return approach
+        if has_lookup and signals.max_loop_depth <= 1 and ("hash" in name or "lookup" in name or "map" in name):
+            return approach
+        if signals.has_recursion and signals.has_memoization and ("memo" in name or "top-down" in name):
+            return approach
+        if _norm(approach.time) == _norm(est) and signals.max_loop_depth >= 1:
+            return approach
+    return None
+
+
+def _alternatives_lens(card: ProblemCard, signals: CodeSignals, est: str) -> ReviewSection:
+    yours = _match_approach(card, signals, est)
+    findings: list[str] = []
+
+    for a in card.approaches:
+        line = f"{a.name} — {a.idea} ({a.time} time, {a.space} space)"
+        if yours is not None and a.name == yours.name:
+            findings.append(f"This is the one you wrote. {line}")
+        else:
+            findings.append(line)
+
+    if yours is not None:
+        others = [a for a in card.approaches if a.name != yours.name]
+        better = [a for a in others if _norm(a.time) == _norm(str(card.complexity.get("target_time", "")))]
+        if better:
+            findings.append(
+                f"You took the {yours.name.lower()} route. The {better[0].name.lower()} "
+                f"gets to {better[0].time} — the gap between those two is the thing "
+                "worth understanding here, not the code itself."
+            )
+    elif signals.parsed:
+        findings.append(
+            "Your solution doesn't match any of the approaches above cleanly, which "
+            "is worth a look — either you found something they don't cover, or it's "
+            "a hybrid that inherits the weaknesses of both."
+        )
+
     return ReviewSection(lens="alternatives", title="Other ways to solve it", findings=findings)
 
 
@@ -151,7 +213,7 @@ def build_review(
             _complexity_lens(signals, est, target),
             _correctness_lens(card, signals),
             _robustness_lens(signals, target),
-            _alternatives_lens(card),
+            _alternatives_lens(card, signals, est),
         ],
         failure_gallery=[FailureCase(**fc) for fc in card.failure_cases],
         failure_intro=p.failure_intro,
