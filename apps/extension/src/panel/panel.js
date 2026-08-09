@@ -101,7 +101,7 @@
       .join("");
 
     $("understandBody").innerHTML = `
-      <p>${esc(card.understanding)}</p>
+      <p class="reads">${esc(card.understanding)}</p>
       <section class="lens">
         <h3>Likely patterns</h3>
         <ul>${patterns || "<li class='muted'>—</li>"}</ul>

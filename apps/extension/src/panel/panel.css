@@ -17,14 +17,26 @@
 
 * { box-sizing: border-box; }
 
+/* The interface voice is the default; the mentor's serif is applied only where
+   the app is actually speaking to you (see `.reads`). */
 body {
   margin: 0;
-  font: var(--t-body) / var(--lh-body) var(--font);
+  font: var(--t-body) / var(--lh-body) var(--font-ui);
   background: var(--ink-0);
   color: var(--text-1);
   min-width: 320px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";  /* Inter: disambiguated 1/l/I, single-storey a */
+}
+
+/* The mentor speaking. Serif, a step larger because serifs run small, and a
+   looser line height — this is text you are meant to think about, not scan. */
+.reads {
+  font-family: var(--font-read);
+  font-size: var(--t-read);
+  line-height: var(--lh-read);
+  letter-spacing: 0;
 }
 
 /* ── shared ─────────────────────────────────────────────────────────────── */
@@ -34,7 +46,7 @@ body {
 .small { font-size: var(--t-small); }
 .error { color: var(--alarm); font-size: var(--t-small); margin-top: var(--s2); }
 .loading { color: var(--text-3); padding: var(--s3) 0; }
-code { font-family: var(--mono); }
+code { font-family: var(--font-mono); }
 
 /* The one label style, used everywhere a thing needs naming rather than
    reading. Consistency here is most of what makes a UI feel authored. */
@@ -45,8 +57,9 @@ section.lens h3,
 .probe-n,
 .probe-label,
 .persona-row label {
+  font-family: var(--font-ui);
   font-size: var(--t-micro);
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--text-3);
@@ -198,8 +211,8 @@ button.ghost { background: transparent; }
 .problem-bar .title {
   font-size: var(--t-lead);
   font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: var(--lh-tight);
+  letter-spacing: var(--track-lead);
+  line-height: var(--lh-lead);
 }
 
 /* Text-only, no chip. Once difficulty is colour-coded the pill is redundant
@@ -293,7 +306,11 @@ button.ghost { background: transparent; }
 }
 
 .rung .lvl { color: var(--gate); margin-bottom: var(--s1); }
-.rung .body { font-size: var(--t-body); }
+.rung .body {
+  font-family: var(--font-read);
+  font-size: var(--t-read);
+  line-height: var(--lh-read);
+}
 
 .rung .report {
   margin-top: var(--s2);
@@ -336,11 +353,14 @@ button.ghost { background: transparent; }
 }
 .persona-row select { margin: 0; flex: 1; }
 
+/* The review's opening line is the mentor talking, so it takes the serif — at
+   lead size with tight tracking so it still reads as a headline. */
 .headline {
+  font-family: var(--font-read);
   font-size: var(--t-lead);
   font-weight: 600;
-  line-height: var(--lh-tight);
-  letter-spacing: -0.015em;
+  line-height: var(--lh-lead);
+  letter-spacing: var(--track-lead);
   margin-bottom: var(--s4);
 }
 
@@ -354,7 +374,7 @@ button.ghost { background: transparent; }
 }
 .reaction .stamp {
   display: inline-block;
-  font: 650 var(--t-micro) / 1 var(--mono);
+  font: 650 var(--t-micro) / 1 var(--font-mono);
   letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--gate);
@@ -366,7 +386,12 @@ button.ghost { background: transparent; }
 .reaction .stamp.good { color: var(--earned); }
 .reaction .stamp.warn { color: var(--gate); }
 .reaction .stamp.bad { color: var(--alarm); }
-.reaction .line { color: var(--text-2); }
+.reaction .line {
+  font-family: var(--font-read);
+  font-size: var(--t-read);
+  line-height: var(--lh-read);
+  color: var(--text-2);
+}
 
 /* Complexity: the one place a big number earns display size. Yours against
    target is the single most useful comparison in the whole review. */
@@ -379,8 +404,8 @@ button.ghost { background: transparent; }
 }
 .cx > div { text-align: center; }
 .cx .v {
-  font: 650 var(--t-display) / 1 var(--mono);
-  letter-spacing: -0.02em;
+  font: 600 var(--t-display) / var(--lh-display) var(--font-mono);
+  letter-spacing: var(--track-display);
   margin-top: var(--s1);
   color: var(--text-1);
 }
@@ -395,7 +420,12 @@ section.lens h3 {
   border-bottom: 1px solid var(--rule);
 }
 section.lens ul { margin: 0; padding-left: var(--s4); }
-section.lens li { margin-bottom: var(--s2); }
+section.lens li {
+  margin-bottom: var(--s2);
+  font-family: var(--font-read);
+  font-size: var(--t-read);
+  line-height: var(--lh-read);
+}
 section.lens li::marker { color: var(--text-3); }
 
 /* Failure cases keep a frame — they are the one thing you scan rather than
@@ -433,7 +463,8 @@ section.lens li::marker { color: var(--text-3); }
   margin: var(--s5) 0 0;
   padding-top: var(--s4);
   border-top: 1px solid var(--rule);
-  font-size: var(--t-small);
+  font-family: var(--font-read);
+  font-size: var(--t-body);
   font-style: italic;
   color: var(--text-3);
 }
@@ -503,7 +534,7 @@ section.lens li::marker { color: var(--text-3); }
   margin-bottom: var(--s1);
 }
 .approach-name { font-weight: 600; }
-.approach-cx { font: var(--t-small) var(--mono); color: var(--text-3); white-space: nowrap; }
+.approach-cx { font: var(--t-small) var(--font-mono); color: var(--text-3); white-space: nowrap; }
 /* Code scrolls rather than wraps — these get compared by shape, and rewrapping
    changes what an approach looks like. */
 .approach-code {
@@ -513,7 +544,7 @@ section.lens li::marker { color: var(--text-3); }
   border: 1px solid var(--rule);
   border-radius: var(--r-sm);
   overflow-x: auto;
-  font: var(--t-small) / 1.55 var(--mono);
+  font: var(--t-small) / 1.55 var(--font-mono);
 }
 .approach-code code { white-space: pre; }
 
@@ -529,7 +560,12 @@ section.lens li::marker { color: var(--text-3); }
 }
 .probe:last-child { border-bottom: 0; }
 .probe-n { color: var(--gate); margin-bottom: var(--s2); }
-.probe-q { font-size: var(--t-body); margin-bottom: var(--s3); }
+.probe-q {
+  font-family: var(--font-read);
+  font-size: var(--t-read);
+  line-height: var(--lh-read);
+  margin-bottom: var(--s3);
+}
 .probe-a { margin: 0 0 var(--s2); }
 .probe .reveal { width: 100%; font-size: var(--t-small); }
 
@@ -539,7 +575,12 @@ section.lens li::marker { color: var(--text-3); }
   padding-left: var(--s3);
   border-left: 2px solid var(--earned-line);
 }
-.probe-model p { margin: 0 0 var(--s3); }
+.probe-model p {
+  margin: 0 0 var(--s3);
+  font-family: var(--font-read);
+  font-size: var(--t-read);
+  line-height: var(--lh-read);
+}
 .probe-model p:last-child { margin-bottom: 0; }
 .probe-label { color: var(--earned); margin-bottom: var(--s1); }
 .probe-label + p + .probe-label { margin-top: var(--s3); }
@@ -561,10 +602,10 @@ section.lens li::marker { color: var(--text-3); }
 .stat { background: var(--ink-0); padding: var(--s4) var(--s3); text-align: center; }
 .stat .n {
   font-size: var(--t-display);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 650;
+  letter-spacing: var(--track-display);
   font-variant-numeric: tabular-nums;
-  line-height: var(--lh-tight);
+  line-height: var(--lh-display);
 }
 .stat .l { display: block; margin-top: var(--s1); }
 
