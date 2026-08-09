@@ -1,614 +1,586 @@
 /**
- * LeetLearn panel styling.
+ * LeetLearn panel.
  *
- * Minimal developer-tool aesthetic, not a themed skin of any host site. The
- * panel will sit beside LeetCode today and other practice sites later, so
- * borrowing one site's palette would make it look wrong everywhere else — and
- * copying a host's colours reads as a cheap imitation rather than a product.
+ * Tokens and the reasoning behind the palette live in tokens.css. The rules
+ * this file follows:
  *
- * The rules this follows:
- *   * No gradients, no glow, no coloured shadows. Flat surfaces, 1px hairlines.
- *   * Near-neutral greys carry the layout; colour appears only where it means
- *     something (a verdict, a difficulty, a warning).
- *   * One restrained accent — a muted amber, warm enough to have personality,
- *     desaturated enough not to shout at 2am.
- *   * Every form control rebuilt. A native OS select is the loudest possible
- *     tell that something was assembled rather than designed.
- *   * Type does the work: tight tracking on headings, mono for anything
- *     measured, generous line height for anything read.
+ *   1. Space and hairlines carry hierarchy — not boxes. The previous version
+ *      put a bordered card around everything, which flattens importance: when
+ *      every element is framed, none of them is emphasised. Cards are now
+ *      reserved for things you can act on.
+ *   2. Colour only where it means something. See the two-tone system in
+ *      tokens.css. A neutral panel makes the one earned-green badge land.
+ *   3. Every measurement comes from the scale. No 11px-here-13px-there.
+ *   4. One signature: the hint ladder is drawn as a ladder. It is the product's
+ *      core metaphor and it was four identical grey boxes.
  */
-
-:root {
-  color-scheme: dark;
-
-  /* Surfaces — near-neutral, flat, low contrast between steps. */
-  --bg: #0e0e10;
-  --surface: #161619;
-  --surface-hi: #1d1d21;
-  --line: #ffffff14;
-  --line-strong: #ffffff26;
-
-  /* Text */
-  --fg: #ececf1;
-  --muted: #9b9ba6;
-  --faint: #6c6c78;
-
-  /* One accent. Muted amber — matches the icon, no glow. */
-  --accent: #d4a054;
-  --accent-dim: #d4a05418;
-  --accent-fg: #0e0e10;
-
-  /* Semantic, desaturated on purpose. These appear on small elements only. */
-  --easy: #5d9e86;
-  --medium: #c2953f;
-  --hard: #c2665f;
-  --good: #5d9e86;
-  --warn: #c2953f;
-  --bad: #c2665f;
-
-  --radius: 10px;
-  --radius-sm: 6px;
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color-scheme: light;
-    --bg: #ffffff;
-    --surface: #f7f8fa;
-    --surface-hi: #eef0f4;
-    --line: #0000001a;
-    --line-strong: #00000026;
-    --fg: #1c1c1f;
-    --muted: #00000099;
-    --faint: #00000066;
-    --accent: #9a6f22;
-    --accent-dim: #9a6f2214;
-    --accent-fg: #ffffff;
-    --easy: #3d7a63;
-    --good: #3d7a63;
-  }
-}
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font: 14px/1.6 var(--font);
-  background: var(--bg);
-  color: var(--fg);
+  font: var(--t-body) / var(--lh-body) var(--font);
+  background: var(--ink-0);
+  color: var(--text-1);
   min-width: 320px;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* ---------- header ---------- */
+/* ── shared ─────────────────────────────────────────────────────────────── */
+
+.hidden { display: none !important; }
+.muted { color: var(--text-2); }
+.small { font-size: var(--t-small); }
+.error { color: var(--alarm); font-size: var(--t-small); margin-top: var(--s2); }
+.loading { color: var(--text-3); padding: var(--s3) 0; }
+code { font-family: var(--mono); }
+
+/* The one label style, used everywhere a thing needs naming rather than
+   reading. Consistency here is most of what makes a UI feel authored. */
+.label,
+section.lens h3,
+.cx .k,
+.stat .l,
+.probe-n,
+.probe-label,
+.persona-row label {
+  font-size: var(--t-micro);
+  font-weight: 650;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* ── header ─────────────────────────────────────────────────────────────── */
 
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--line);
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--rule);
   position: sticky;
   top: 0;
-  background: var(--bg);
+  background: var(--ink-0);
   z-index: 5;
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
+.brand { display: flex; align-items: center; gap: var(--s2); min-width: 0; }
 
 /* The stair from the extension icon, redrawn in CSS so the panel and the
-   toolbar button are unmistakably the same product. Flat, matching the icon. */
+   toolbar button read as one product. */
 .logo {
   position: relative;
-  display: inline-block;
+  flex: none;
   width: 18px;
   height: 18px;
-  border-radius: 5px;
-  background: #18181c;
-  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--ink-2);
+  border: 1px solid var(--rule-2);
   font-size: 0;
 }
-.logo::before,
-.logo::after,
-.logo i {
+.logo::before, .logo::after, .logo i {
   content: "";
   position: absolute;
+  width: 6px;
   height: 2px;
   border-radius: 1px;
-  background: var(--accent);
+  background: var(--gate);
 }
-.logo::before { width: 6px; left: 3px;  bottom: 4px; }
-.logo i       { width: 6px; left: 6px;  bottom: 7px; }
-.logo::after  { width: 6px; left: 9px;  bottom: 10px; }
+.logo::before { left: 3px; bottom: 4px; }
+.logo i       { left: 6px; bottom: 7px; }
+.logo::after  { left: 9px; bottom: 10px; }
 
-/* Where the wordmark used to be. The side panel host already shows the
-   extension name in its own title bar, so repeating it wasted the most
-   valuable row in a 380px-wide surface. This says what you are looking at. */
 .context {
-  font-size: 12.5px;
-  color: var(--muted);
-  font-weight: 500;
-  letter-spacing: 0;
+  font-size: var(--t-small);
+  font-weight: 550;
+  color: var(--text-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 210px;
 }
 
 .streak {
-  font-size: 12px;
-  color: var(--muted);
+  flex: none;
+  font-size: var(--t-small);
+  color: var(--text-2);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- primitives ---------- */
+/* ── controls ───────────────────────────────────────────────────────────── */
 
-.pane { padding: 14px; }
-.hidden { display: none !important; }
-.muted { color: var(--muted); }
-.small { font-size: 12px; }
-.error { color: var(--bad); font-size: 12.5px; margin-top: 8px; }
-.loading { color: var(--muted); padding: 10px 0; }
+input, select, textarea, button { font: inherit; color: var(--text-1); }
 
-input,
-select,
-textarea,
-button {
-  font: inherit;
-  color: var(--fg);
-}
-
-input,
-textarea {
+input, textarea {
   width: 100%;
-  padding: 9px 11px;
-  margin: 6px 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  transition: border-color 0.15s ease, background 0.15s ease;
+  padding: var(--s2) var(--s3);
+  margin: var(--s2) 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  background: var(--ink-1);
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
 }
-input::placeholder,
-textarea::placeholder { color: var(--faint); }
-input:focus,
-textarea:focus,
-select:focus {
+input::placeholder, textarea::placeholder { color: var(--text-3); }
+input:focus, textarea:focus, select:focus {
   outline: none;
-  border-color: var(--accent);
-  background: var(--surface-hi);
+  border-color: var(--gate-line);
+  background: var(--ink-2);
 }
 
-/* Native selects render as OS widgets and look pasted-on. Rebuilt with a
-   drawn chevron so the persona picker matches everything around it. */
+/* Rebuilt from scratch — a native OS select beside this is the loudest tell
+   that something was assembled rather than designed. */
 select {
   appearance: none;
   -webkit-appearance: none;
   width: 100%;
-  padding: 8px 30px 8px 11px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background-color: var(--surface);
+  padding: var(--s2) var(--s5) var(--s2) var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  background-color: var(--ink-1);
   background-image:
-    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
-    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%;
+    linear-gradient(45deg, transparent 50%, var(--text-2) 50%),
+    linear-gradient(135deg, var(--text-2) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 53%, calc(100% - 10px) 53%;
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s var(--ease);
 }
-select:hover { border-color: var(--line-strong); }
-select option { background: var(--surface); color: var(--fg); }
+select:hover { border-color: var(--rule-2); }
+select option { background: var(--ink-1); color: var(--text-1); }
 
 button {
-  padding: 9px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--line);
-  background: var(--surface);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+  background: var(--ink-1);
   cursor: pointer;
-  font-weight: 500;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.06s ease;
+  font-weight: 550;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
 }
-button:hover:not(:disabled) { background: var(--surface-hi); border-color: var(--line-strong); }
-button:active:not(:disabled) { transform: translateY(1px); }
-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:hover:not(:disabled) { background: var(--ink-2); border-color: var(--rule-2); }
+button:active:not(:disabled) { background: var(--ink-3); }
+button:focus-visible { outline: 2px solid var(--gate); outline-offset: 2px; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* The primary action is always "get a hint" — something that costs you — so it
+   wears the gate colour rather than a generic brand blue. */
 button.primary {
-  background: var(--accent);
-  color: var(--accent-fg);
-  border-color: var(--accent);
   width: 100%;
+  padding: var(--s3);
+  background: var(--gate-soft);
+  border-color: var(--gate-line);
+  color: var(--gate);
   font-weight: 600;
 }
-button.primary:hover:not(:disabled) { background: #e0ae62; border-color: #e0ae62; }
+button.primary:hover:not(:disabled) {
+  background: var(--gate);
+  border-color: var(--gate);
+  color: var(--ink-0);
+}
 button.ghost { background: transparent; }
-button:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* ---------- problem bar ---------- */
+/* ── panes, problem bar, tabs ───────────────────────────────────────────── */
+
+.pane { padding: var(--s4); }
 
 .problem-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--line);
-  font-size: 13px;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--rule);
 }
-.problem-bar .title { font-weight: 600; margin-right: 2px; }
-
-.badge {
-  display: inline-block;
-  font-size: 11px;
+.problem-bar .title {
+  font-size: var(--t-lead);
   font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: transparent;
-  border: 1px solid var(--line-strong);
-  color: var(--muted);
-  letter-spacing: 0.01em;
+  letter-spacing: -0.015em;
+  line-height: var(--lh-tight);
 }
-/* Colour only on the label; the outline stays neutral so a row of badges
-   reads as one system rather than a set of stickers. */
-.badge.easy   { color: var(--easy); }
-.badge.medium { color: var(--medium); }
-.badge.hard   { color: var(--hard); }
-.badge.solved { color: var(--easy); }
-.badge.unverified { color: var(--warn); }
 
-/* ---------- tabs ---------- */
+/* Text-only, no chip. Once difficulty is colour-coded the pill is redundant
+   decoration, and a row of pills is visual noise competing with the title. */
+.badge {
+  font-size: var(--t-micro);
+  font-weight: 650;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.badge.easy { color: var(--easy); }
+.badge.medium { color: var(--medium); }
+.badge.hard { color: var(--hard); }
+.badge.solved { color: var(--earned); }
+.badge.unverified { color: var(--gate); }
 
 .tabs {
   display: flex;
-  border-bottom: 1px solid var(--line);
-  padding: 0 6px;
-  gap: 2px;
+  gap: var(--s1);
+  padding: 0 var(--s3);
+  border-bottom: 1px solid var(--rule);
 }
 .tab {
   flex: 1;
   border: 0;
   border-radius: 0;
   background: transparent;
-  padding: 11px 4px 9px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--muted);
+  padding: var(--s3) var(--s1) calc(var(--s3) - 2px);
+  font-size: var(--t-small);
+  font-weight: 550;
+  color: var(--text-2);
   border-bottom: 2px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
 }
-.tab:hover:not(.active):not(.locked) { color: var(--fg); background: transparent; }
+.tab:hover:not(.active):not(.locked) { color: var(--text-1); background: transparent; }
+.tab.active { color: var(--text-1); border-bottom-color: var(--gate); font-weight: 650; }
 
-/* A tab you cannot open yet. Shown rather than hidden: the point of the AC
-   gate is that the learner knows there is something waiting for them, and that
-   solving it themselves is what opens it. */
-.tab.locked { color: var(--faint); cursor: not-allowed; }
+/* Locked tabs are shown, not hidden. The gate only motivates if you can see
+   there is something behind it. */
+.tab.locked { color: var(--text-3); cursor: not-allowed; }
 .tab.locked::after {
   content: "";
   display: inline-block;
-  width: 7px;
-  height: 8px;
-  margin-left: 5px;
+  width: 6px;
+  height: 7px;
+  margin-left: var(--s1);
   vertical-align: -1px;
   border: 1px solid currentColor;
   border-radius: 1px;
   border-top-color: transparent;
   box-shadow: inset 0 -3px 0 -1px currentColor;
 }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
-.tabpane { padding: 14px; }
+.tabpane { padding: var(--s4); }
 
-/* ---------- hints ---------- */
+/* ── the hint ladder ────────────────────────────────────────────────────── */
 
-.gate-note {
-  background: var(--accent-dim);
-  border-left: 2px solid var(--accent);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  padding: 10px 12px;
-  font-size: 12.5px;
-  color: var(--muted);
-  margin-bottom: 12px;
+/* The signature element. Hints are rungs you climb only as far as you need, so
+   they are drawn as a ladder: a rail down the left, each revealed hint a rung
+   on it. Previously four identical bordered boxes, which said nothing about
+   what a hint costs or how far up you had gone. */
+.ladder {
+  position: relative;
+  margin: var(--s4) 0;
+  padding-left: var(--s5);
+}
+.ladder::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: linear-gradient(var(--gate-line), var(--rule));
 }
 
-.hint {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 12px 13px;
-  margin-bottom: 9px;
+.rung { position: relative; padding-bottom: var(--s4); }
+.rung:last-child { padding-bottom: 0; }
+
+/* The node on the rail. Filled because this rung has been spent. */
+.rung::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--s5) + 4px);
+  top: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gate);
+  box-shadow: 0 0 0 3px var(--ink-0);
 }
-.hint .lvl {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-  font-weight: 700;
-  margin-bottom: 5px;
-}
-.hint .report {
-  margin-top: 9px;
-  font-size: 11.5px;
-  color: var(--faint);
-  background: none;
-  border: 0;
+
+.rung .lvl { color: var(--gate); margin-bottom: var(--s1); }
+.rung .body { font-size: var(--t-body); }
+
+.rung .report {
+  margin-top: var(--s2);
   padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--t-small);
   font-weight: 400;
+  color: var(--text-3);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.hint .report:hover:not(:disabled) { color: var(--muted); background: none; }
+.rung .report:hover:not(:disabled) { color: var(--text-2); background: none; }
 
-/* ---------- review ---------- */
+/* How many rungs are left. Sits at the foot of the rail. */
+.ladder-foot {
+  position: relative;
+  padding-left: var(--s5);
+  font-size: var(--t-small);
+  color: var(--text-3);
+}
 
-.persona-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
-.persona-row label {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--faint);
-  font-weight: 600;
+.gate-note {
+  padding: var(--s3);
+  border-left: 2px solid var(--gate-line);
+  background: var(--gate-soft);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  font-size: var(--t-small);
+  color: var(--text-2);
+  margin-bottom: var(--s4);
+}
+
+/* ── review ─────────────────────────────────────────────────────────────── */
+
+.persona-row {
+  display: flex;
+  gap: var(--s2);
+  align-items: center;
+  margin-bottom: var(--s4);
 }
 .persona-row select { margin: 0; flex: 1; }
-.persona-row button { padding: 8px 12px; font-size: 12.5px; }
 
 .headline {
-  font-size: 15px;
+  font-size: var(--t-lead);
   font-weight: 600;
-  line-height: 1.45;
-  margin-bottom: 12px;
-  letter-spacing: -0.01em;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.015em;
+  margin-bottom: var(--s4);
 }
 
-/**
- * Reaction stamp — replaces the emoji-and-caption block.
- *
- * A 26px emoji is the cheapest possible signal of "generated", and emoji
- * reactions age badly. This is a typographic stamp instead: a short verdict
- * set in mono caps, with the joke carried by the writing. It reads as
- * deliberate at any zoom and does not depend on a meme format staying current.
- */
+/* The verdict stamp. Typographic, not an emoji — the joke lives in the writing,
+   which is the only part that ages well. */
 .reaction {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 12px 13px;
-  margin-bottom: 14px;
-  background: var(--surface);
+  padding: var(--s3) 0 var(--s4);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: var(--s4);
 }
 .reaction .stamp {
   display: inline-block;
-  font: 600 10.5px/1 var(--mono);
-  letter-spacing: 0.12em;
+  font: 650 var(--t-micro) / 1 var(--mono);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--gate);
   border: 1px solid currentColor;
   border-radius: 3px;
-  padding: 4px 7px;
-  margin-bottom: 9px;
+  padding: var(--s1) 6px;
+  margin-bottom: var(--s2);
 }
-.reaction .stamp.good { color: var(--good); }
-.reaction .stamp.warn { color: var(--warn); }
-.reaction .stamp.bad  { color: var(--bad); }
-.reaction .line { font-size: 13.5px; line-height: 1.5; }
+.reaction .stamp.good { color: var(--earned); }
+.reaction .stamp.warn { color: var(--gate); }
+.reaction .stamp.bad { color: var(--alarm); }
+.reaction .line { color: var(--text-2); }
 
-.cx { display: flex; gap: 9px; margin-bottom: 16px; }
-.cx > div {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 10px;
-  text-align: center;
+/* Complexity: the one place a big number earns display size. Yours against
+   target is the single most useful comparison in the whole review. */
+.cx {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--s3);
+  margin-bottom: var(--s5);
 }
-.cx .k {
-  font-size: 10px;
-  color: var(--faint);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-}
+.cx > div { text-align: center; }
 .cx .v {
-  font: 600 14px var(--mono);
-  margin-top: 4px;
-  letter-spacing: -0.01em;
+  font: 650 var(--t-display) / 1 var(--mono);
+  letter-spacing: -0.02em;
+  margin-top: var(--s1);
+  color: var(--text-1);
 }
-.cx .v.good { color: var(--good); }
-.cx .v.warn { color: var(--warn); }
+.cx .v.good { color: var(--earned); }
+.cx .v.warn { color: var(--gate); }
+.cx-sep { color: var(--text-3); font-size: var(--t-small); }
 
-section.lens { margin-bottom: 18px; }
+section.lens { margin-bottom: var(--s5); }
 section.lens h3 {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--faint);
-  font-weight: 700;
-  margin: 0 0 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--line);
+  margin: 0 0 var(--s3);
+  padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--rule);
 }
-section.lens ul { margin: 0; padding-left: 16px; }
-section.lens li { margin-bottom: 6px; }
-section.lens li::marker { color: var(--faint); }
+section.lens ul { margin: 0; padding-left: var(--s4); }
+section.lens li { margin-bottom: var(--s2); }
+section.lens li::marker { color: var(--text-3); }
 
+/* Failure cases keep a frame — they are the one thing you scan rather than
+   read, and the frame is what makes them scannable. */
 .failure {
-  border: 1px solid var(--line);
-  border-left: 2px solid var(--bad);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  padding: 11px 12px;
-  margin-bottom: 9px;
-  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--alarm);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  padding: var(--s3);
+  margin-bottom: var(--s2);
+  background: var(--ink-1);
 }
-.failure .mistake { font-weight: 600; margin-bottom: 7px; font-size: 13px; }
-.failure .row { font-size: 12.5px; margin: 3px 0; display: flex; gap: 8px; }
+.failure .mistake { font-weight: 600; margin-bottom: var(--s2); }
+.failure .row { display: flex; gap: var(--s2); font-size: var(--t-small); margin: var(--s1) 0; }
 .failure .row .k {
-  color: var(--faint);
-  min-width: 60px;
-  font-size: 11px;
+  flex: none;
+  min-width: 58px;
+  font-size: var(--t-micro);
+  font-weight: 650;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding-top: 2px;
+  color: var(--text-3);
+  padding-top: 3px;
 }
 .failure code {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 1px 6px;
-  font: 12px var(--mono);
+  background: var(--ink-0);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: var(--t-small);
 }
-.failure .why { margin-top: 7px; font-size: 12.5px; color: var(--muted); }
+.failure .why { margin-top: var(--s2); font-size: var(--t-small); color: var(--text-2); }
 
-/* The persona's sign-off. Italic and set apart so the review ends deliberately
-   instead of stopping after the last bullet. */
 .closer {
-  margin: 18px 0 4px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-  font-size: 12.5px;
+  margin: var(--s5) 0 0;
+  padding-top: var(--s4);
+  border-top: 1px solid var(--rule);
+  font-size: var(--t-small);
   font-style: italic;
-  color: var(--muted);
+  color: var(--text-3);
 }
 
-.locked { text-align: center; padding: 34px 14px; color: var(--muted); }
+/* ── locked state ───────────────────────────────────────────────────────── */
 
-/* ---------- the post-AC firehose ---------- */
+/* Recessed rather than absent, with the gate colour on the seal. You should be
+   able to feel that something is behind this. */
+.locked {
+  text-align: center;
+  padding: var(--s6) var(--s4);
+  color: var(--text-2);
+}
+.locked .seal {
+  width: 26px;
+  height: 20px;
+  margin: 0 auto var(--s3);
+  border: 1.5px solid var(--gate-line);
+  border-radius: 3px;
+  position: relative;
+}
+.locked .seal::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -9px;
+  width: 14px;
+  height: 11px;
+  transform: translateX(-50%);
+  border: 1.5px solid var(--gate-line);
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+}
+.locked strong { color: var(--text-1); display: block; margin-bottom: var(--s1); }
 
-/* Collapsed by default. It is the largest block in the panel, and the review is
-   what people came for — this is the reference they open when they want it. */
+/* ── the post-AC firehose ───────────────────────────────────────────────── */
+
 .unlocked {
-  margin-top: 18px;
-  border-top: 1px solid var(--line);
-  padding-top: 14px;
+  margin-top: var(--s5);
+  border-top: 1px solid var(--rule);
+  padding-top: var(--s4);
 }
 .unlocked > summary {
   cursor: pointer;
   list-style: none;
-  font-size: 12.5px;
+  font-size: var(--t-small);
   font-weight: 600;
-  color: var(--accent);
-  padding: 4px 0;
+  color: var(--earned);
+  padding: var(--s1) 0;
 }
 .unlocked > summary::-webkit-details-marker { display: none; }
 .unlocked > summary::before { content: "▸ "; }
 .unlocked[open] > summary::before { content: "▾ "; }
 
 .approach {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 11px 12px;
-  margin: 10px 0;
-  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: var(--s3);
+  margin: var(--s3) 0;
+  background: var(--ink-1);
 }
 .approach-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
-  margin-bottom: 5px;
+  gap: var(--s2);
+  margin-bottom: var(--s1);
 }
-.approach-name { font-weight: 600; font-size: 13px; }
-.approach-cx {
-  font: 11px var(--mono);
-  color: var(--muted);
-  white-space: nowrap;
-}
-/* Code is the one place a horizontal scrollbar is correct — wrapping a
-   solution changes what it looks like, and people compare these by shape. */
+.approach-name { font-weight: 600; }
+.approach-cx { font: var(--t-small) var(--mono); color: var(--text-3); white-space: nowrap; }
+/* Code scrolls rather than wraps — these get compared by shape, and rewrapping
+   changes what an approach looks like. */
 .approach-code {
-  margin: 9px 0 0;
-  padding: 10px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  margin: var(--s2) 0 0;
+  padding: var(--s3);
+  background: var(--ink-0);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
   overflow-x: auto;
-  font: 12px/1.5 var(--mono);
+  font: var(--t-small) / 1.55 var(--mono);
 }
 .approach-code code { white-space: pre; }
 
 .cx-list { list-style: none; padding-left: 0; }
-.cx-list li { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; }
-.cx-list code { font-size: 12px; }
+.cx-list li { display: flex; justify-content: space-between; gap: var(--s2); padding: var(--s1) 0; }
 
-/* ---------- interview ---------- */
+/* ── interview ──────────────────────────────────────────────────────────── */
 
 .probe {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 13px;
-  margin-bottom: 12px;
-  background: var(--surface);
+  padding-bottom: var(--s4);
+  margin-bottom: var(--s4);
+  border-bottom: 1px solid var(--rule);
 }
-.probe-n {
-  font: 600 10px/1 var(--mono);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--faint);
-  margin-bottom: 8px;
-}
-.probe-q { font-size: 13.5px; line-height: 1.5; margin-bottom: 10px; }
-.probe-a { margin: 0 0 8px; font-size: 13px; }
-.probe .reveal { width: 100%; font-size: 12.5px; }
+.probe:last-child { border-bottom: 0; }
+.probe-n { color: var(--gate); margin-bottom: var(--s2); }
+.probe-q { font-size: var(--t-body); margin-bottom: var(--s3); }
+.probe-a { margin: 0 0 var(--s2); }
+.probe .reveal { width: 100%; font-size: var(--t-small); }
 
-/* The model answer, once earned. Set apart from the question so it is obvious
-   which text is yours to write and which is the comparison. */
+/* Earned-coloured: revealing it is on the far side of committing an answer. */
 .probe-model {
-  margin-top: 10px;
-  padding-top: 11px;
-  border-top: 1px solid var(--line);
+  margin-top: var(--s3);
+  padding-left: var(--s3);
+  border-left: 2px solid var(--earned-line);
 }
-.probe-model p { margin: 0 0 10px; font-size: 13px; line-height: 1.55; }
+.probe-model p { margin: 0 0 var(--s3); }
 .probe-model p:last-child { margin-bottom: 0; }
-.probe-label {
-  font: 700 10px/1 var(--mono);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-  margin-bottom: 6px;
-}
-.probe-label + p + .probe-label { margin-top: 12px; }
+.probe-label { color: var(--earned); margin-bottom: var(--s1); }
+.probe-label + p + .probe-label { margin-top: var(--s3); }
 
-/* ---------- progress ---------- */
+/* ── progress ───────────────────────────────────────────────────────────── */
 
-.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 14px; }
-.stat {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 12px 10px;
-  text-align: center;
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-bottom: var(--s4);
 }
+/* Hairline dividers instead of four separate cards: one object rather than
+   four, which is what a stat block actually is. */
+.stat { background: var(--ink-0); padding: var(--s4) var(--s3); text-align: center; }
 .stat .n {
-  font-size: 22px;
+  font-size: var(--t-display);
   font-weight: 700;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+  line-height: var(--lh-tight);
 }
-.stat .l {
-  font-size: 10.5px;
-  color: var(--faint);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-top: 2px;
-}
+.stat .l { display: block; margin-top: var(--s1); }
 
-.settings { margin-top: 14px; font-size: 12.5px; color: var(--muted); }
-.settings summary { cursor: pointer; list-style: none; padding: 4px 0; }
+.settings { margin-top: var(--s4); font-size: var(--t-small); color: var(--text-2); }
+.settings summary { cursor: pointer; list-style: none; padding: var(--s1) 0; }
 .settings summary::-webkit-details-marker { display: none; }
-.settings summary::before { content: "▸ "; color: var(--faint); }
+.settings summary::before { content: "▸ "; color: var(--text-3); }
 .settings[open] summary::before { content: "▾ "; }
 
-code { font-family: var(--mono); }
+::selection { background: var(--gate-soft); }
 
-::selection { background: var(--accent-dim); }
-
-/* Scrollbars are another OS-default tell in a narrow panel. */
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 5px; border: 3px solid var(--bg); }
-::-webkit-scrollbar-thumb:hover { background: var(--faint); }
+::-webkit-scrollbar-thumb {
+  background: var(--rule-2);
+  border-radius: 5px;
+  border: 3px solid var(--ink-0);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
