@@ -1,0 +1,40 @@
+name: test
+
+# Runs the whole test suite on every push and PR — the Python backend (which
+# includes the migration-drift check that would have caught the stale-schema
+# bug this workflow's sibling commit fixed) and the extension's JS/manifest
+# tests. Nothing here needs secrets or an API key: the app is designed to run
+# fully offline, so CI exercises the same path a contributor's machine does.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        working-directory: apps/api
+        run: pip install -r requirements.txt
+      - name: Run tests
+        working-directory: apps/api
+        run: pytest -q
+
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run adapter tests
+        working-directory: apps/extension
+        run: node --test tests/adapter.test.mjs
+      - name: Build both browser targets
+        working-directory: apps/extension
+        run: python3 build.py
