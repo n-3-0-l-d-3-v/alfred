@@ -33,9 +33,13 @@ OUT = Path(__file__).resolve().parent.parent / "src" / "icons"
 SIZES = (16, 32, 48, 128)
 SS = 4  # supersampling factor
 
-# Flat near-black tile with a muted amber mark. No gradient — see module docstring.
-TILE = (0x18, 0x18, 0x1C)
-MARK = (0xD4, 0xA0, 0x54)
+# Flat warm-charcoal tile with the Ember accent (tokens.css --brand / --ink-0).
+# Kept in sync with the panel by hand rather than generated from the token
+# file: a PNG toolbar icon can't read a CSS variable, so if the palette moves
+# again this constant has to move with it or the toolbar and the panel drift
+# apart the same way the amber-on-neutral combination did before Ember.
+TILE = (0x17, 0x13, 0x10)
+MARK = (0xE0, 0x39, 0x2A)
 
 # Geometry as fractions of the tile, so every size is the same drawing.
 CORNER_R = 0.235
