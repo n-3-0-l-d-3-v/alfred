@@ -12,7 +12,8 @@
   "permissions": [
     "storage",
     "tabs",
-    "identity"
+    "identity",
+    "scripting"
   ],
   "host_permissions": [
     "https://leetcode.com/problems/*",

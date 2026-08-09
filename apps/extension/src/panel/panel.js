@@ -43,8 +43,26 @@
     try {
       return await ext.tabs.sendMessage(tab.id, { type: "LL_EXTRACT" });
     } catch (_) {
-      // No content script on this page, or it loaded before the extension did.
-      return null;
+      // No content script answered. The overwhelmingly common cause: this tab
+      // was already open before the extension was installed or reloaded —
+      // Chrome and Firefox only auto-inject content scripts into *new*
+      // navigations, never retroactively into tabs that predate the
+      // extension. Rather than tell the learner to go refresh the page, inject
+      // on demand and retry once. The file list comes straight off the
+      // manifest rather than being copied here, so there is still exactly one
+      // place that knows which scripts a page needs.
+      try {
+        const files = ext.runtime.getManifest().content_scripts?.[0]?.js;
+        if (!files?.length) return null;
+        await ext.scripting.executeScript({ target: { tabId: tab.id }, files });
+        return await ext.tabs.sendMessage(tab.id, { type: "LL_EXTRACT" });
+      } catch (_) {
+        // Injection itself failed — most likely this page is outside our
+        // host_permissions, i.e. genuinely not a supported site. Chrome's own
+        // permission check is what decides that, not a URL pattern duplicated
+        // here.
+        return null;
+      }
     }
   }
 
