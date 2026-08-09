@@ -18,7 +18,7 @@ from .analysis import analyze
 from .analysis.registry import supported_languages
 from .auth import AuthError, current_user, exchange_github_code, issue_token, upsert_github_user
 from .config import get_settings
-from .db import get_db, init_db, is_sqlite
+from .db import get_db, init_db
 from .gamification import budget, progress, streaks
 from .mentor import personas
 from .mentor.cards import CardStore
@@ -33,11 +33,10 @@ hints = HintService(cards, mentor)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # Convenience only, and only on SQLite. On a real database the schema is
-    # owned by Alembic — `create_all` at boot would quietly diverge from the
-    # migration history the moment a column changed.
-    if is_sqlite():
-        init_db()
+    # Runs the real Alembic migrations, not a schema shortcut — safe on a
+    # fresh database, a current one, or a stale one left over from an older
+    # checkout (see db.py for why that distinction matters here).
+    init_db()
     yield
 
 
