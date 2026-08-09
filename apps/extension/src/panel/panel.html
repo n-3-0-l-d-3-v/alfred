@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>LeetLearn</title>
+    <link rel="stylesheet" href="tokens.css" />
     <link rel="stylesheet" href="panel.css" />
   </head>
   <body>
@@ -64,15 +65,16 @@
           Hints stay Socratic until you pass. The full solution unlocks after a
           passing submission — that's the whole point.
         </div>
-        <div id="hintList"></div>
+        <div id="hintList" class="ladder hidden"></div>
+        <div id="hintMeta" class="ladder-foot"></div>
         <button id="nextHint" class="primary">Give me a nudge</button>
-        <div id="hintMeta" class="muted small"></div>
         <div id="hintError" class="error"></div>
       </div>
 
       <!-- REVIEW -->
       <div class="tabpane hidden" id="tab-review">
         <div id="reviewLocked" class="locked">
+          <div class="seal" aria-hidden="true"></div>
           <p><strong>Locked until you pass.</strong></p>
           <p class="muted small">
             Solve it first — then you get every approach, the complexity
@@ -99,6 +101,7 @@
       <!-- INTERVIEW -->
       <div class="tabpane hidden" id="tab-interview">
         <div id="interviewLocked" class="locked">
+          <div class="seal" aria-hidden="true"></div>
           <p><strong>Locked until you pass.</strong></p>
           <p class="muted small">
             Then I ask you the things an interviewer would — about the code you

@@ -30,6 +30,7 @@ REQUIRED = [
     "content/content.js",
     "content/page-bridge.js",
     "panel/panel.html",
+    "panel/tokens.css",
     "panel/panel.css",
     "panel/panel.js",
 ]

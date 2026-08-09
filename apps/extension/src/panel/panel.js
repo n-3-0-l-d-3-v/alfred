@@ -132,7 +132,7 @@
       const h = await LL.api.hint(state.sessionId, level, fresh?.code ?? null, false);
       state.hints.push(h);
       renderHints();
-      $("hintMeta").textContent = `${h.hints_remaining_today} hint reads left today.`;
+      $("hintMeta").textContent = `${4 - state.hints.length} rungs left on this problem · ${h.hints_remaining_today} hint reads left today.`;
     } catch (e) {
       $("hintError").textContent = e.message;
     } finally {
@@ -141,12 +141,13 @@
   }
 
   function renderHints() {
+    $("hintList").classList.toggle("hidden", state.hints.length === 0);
     $("hintList").innerHTML = state.hints
       .map(
         (h, i) => `
-      <div class="hint">
-        <div class="lvl">Nudge ${i + 1} of 4</div>
-        <div>${esc(h.nudge)}</div>
+      <div class="rung">
+        <div class="lvl label">Rung ${i + 1} of 4</div>
+        <div class="body">${esc(h.nudge)}</div>
         <button class="report" data-level="${h.level}">this hint wasn't helpful</button>
       </div>`
       )
@@ -163,7 +164,7 @@
     }
 
     $("nextHint").textContent =
-      state.hints.length === 0 ? "Give me a nudge" : `Next nudge (${state.hints.length + 1} of 4)`;
+      state.hints.length === 0 ? "Give me a nudge" : `Next rung (${state.hints.length + 1} of 4)`;
     $("nextHint").disabled = state.hints.length >= 4;
   }
 
@@ -273,8 +274,9 @@
       <div class="headline">${esc(r.headline)}</div>
       ${reaction}
       <div class="cx">
-        <div><div class="k">Yours</div><div class="v ${optimal ? "good" : "warn"}">${esc(r.complexity_time)}</div></div>
-        <div><div class="k">Target</div><div class="v">${esc(r.target_time)}</div></div>
+        <div><div class="k label">Yours</div><div class="v ${optimal ? "good" : "warn"}">${esc(r.complexity_time)}</div></div>
+        <div class="cx-sep">${optimal ? "matches" : "vs"}</div>
+        <div><div class="k label">Target</div><div class="v">${esc(r.target_time)}</div></div>
       </div>
 
       <section class="lens"><h3>What you did well</h3>
