@@ -1,48 +1,36 @@
 /**
- * Design tokens.
+ * Design tokens — Ember.
  *
- * ── Colour: one palette, taken whole ────────────────────────────────────────
+ *   #171310  #201b17  #e0392a  #e2812f  #f6d998
  *
- * These are Discord's dark-theme values, used as a complete system rather than
- * sampled from. That is the point: a palette is a set of relationships, and
- * every colour in a good one was chosen against the others. Taking the greys
- * from one product and the accent from another gives you two decisions that
- * were never made together, which is exactly what the earlier coral-on-warm-grey
- * version was — and why it read as assembled.
+ * One warm accent family — red-orange, orange, pale yellow — carried across
+ * every semantic role, on a warm-tinted charcoal rather than a neutral one.
+ * The same discipline the monochrome option used (a single hue family doing
+ * all the work) but with actual colour temperature instead of none.
  *
- * Discord's ramp is also the right *kind* of palette for this: built for hours
- * of dark-mode reading in a narrow panel beside other content, which is
- * precisely what this is.
+ * How state works within one family:
+ *   Palest yellow  = the thing you achieved. Solved, unlocked, optimal —
+ *                    the warmest, calmest tone in the family reads as "safe."
+ *   Orange         = caution. Suboptimal, unverified, medium difficulty.
+ *   Red-orange     = both the primary action and failure. It's the hottest
+ *                    tone available, which suits a "spend a hint" button and
+ *                    a "this broke" state equally well — both are the kind of
+ *                    thing that gets your attention.
+ *   Warm charcoal  = everything ordinary. Never neutral grey: even the page
+ *                    background carries a trace of the same warmth as the
+ *                    accents, so nothing in the panel reads as a colour
+ *                    borrowed from somewhere else.
  *
- * The roles follow Discord's own usage, so the palette stays internally
- * consistent instead of being repurposed:
- *
- *   Blurple  #5865F2  brand, primary action, active state, the hint ladder
- *   Green    #23A55A  success — solved, unlocked, optimal
- *   Yellow   #F0B232  caution — suboptimal, unverified, medium difficulty
- *   Red      #DA373C  failure — errors, hard difficulty, what breaks
- *
- * ── Type: two real faces, bundled ───────────────────────────────────────────
- *
- * Urbanist for everything read, JetBrains Mono for everything measured. Both
- * are bundled as woff2 rather than linked, because the extension CSP blocks
- * external stylesheets and a webfont that silently fails to load is the
- * difference between a designed panel and a default one. 57KB for the pair.
- *
- * Urbanist is a low-contrast geometric sans — the register modern product UI
- * is set in, and distinct enough from the system stack that the panel reads as
- * designed at a glance. Hierarchy comes from weight and size within one family
- * rather than from mixing families, which is the more disciplined move and
- * looks it.
+ * Type is unchanged from every other palette option: Urbanist for reading,
+ * JetBrains Mono for anything measured, both bundled as woff2.
  */
 
-/* Variable fonts: one file each, covering the whole weight range. */
 @font-face {
   font-family: "Urbanist";
   src: url("../fonts/urbanist.woff2") format("woff2-variations");
   font-weight: 100 900;
   font-style: normal;
-  font-display: block;  /* block, not swap — a reflow mid-read is worse than 50ms */
+  font-display: block;
 }
 
 @font-face {
@@ -56,42 +44,44 @@
 :root {
   color-scheme: dark;
 
-  /* ── Discord dark ────────────────────────────────────────────────────── */
-  --ink-0: #2b2d31;   /* page — their sidebar tone, which is what this is */
-  --ink-1: #313338;   /* raised */
-  --ink-2: #383a40;   /* interactive / hover */
-  --ink-3: #404249;   /* pressed */
-  --ink-deep: #1e1f22; /* wells: code blocks, inputs */
+  /* ── warm charcoal, not neutral grey ───────────────────────────────────── */
+  --ink-0: #171310;   /* page */
+  --ink-1: #201b17;   /* raised */
+  --ink-2: #2a231e;   /* interactive / hover */
+  --ink-3: #352c25;   /* pressed */
+  --ink-deep: #100d0a; /* wells sit darker than the page */
 
-  --rule: rgba(255, 255, 255, 0.06);
-  --rule-2: #3f4147;
+  --rule: rgba(255, 213, 153, 0.08);
+  --rule-2: rgba(255, 213, 153, 0.16);
 
-  --text-1: #f2f3f5;  /* header-primary */
-  --text-2: #b5bac1;  /* header-secondary */
-  --text-3: #949ba4;  /* muted */
+  --text-1: #f5ede4;
+  --text-2: #baa999;
+  --text-3: #8a7a6c;
 
-  /* ── semantic roles ──────────────────────────────────────────────────── */
-  --brand: #5865f2;
-  --brand-hover: #4752c4;
-  --brand-soft: rgba(88, 101, 242, 0.15);
-  --brand-line: rgba(88, 101, 242, 0.4);
+  /* ── the ember family, one hue set carrying every role ─────────────────── */
+  --brand: #e0392a;
+  --brand-hover: #c92f21;
+  --brand-soft: rgba(224, 57, 42, 0.15);
+  --brand-line: rgba(224, 57, 42, 0.4);
 
-  --earned: #23a55a;
-  --earned-soft: rgba(35, 165, 90, 0.15);
-  --earned-line: rgba(35, 165, 90, 0.4);
+  --earned: #f6d998;
+  --earned-soft: rgba(246, 217, 152, 0.12);
+  --earned-line: rgba(246, 217, 152, 0.4);
 
-  --caution: #f0b232;
-  --caution-soft: rgba(240, 178, 50, 0.15);
+  --caution: #e2812f;
+  --caution-soft: rgba(226, 129, 47, 0.14);
 
-  --alarm: #da373c;
-  --alarm-soft: rgba(218, 55, 60, 0.15);
+  /* Alarm shares brand's hue rather than getting a fourth colour — red-orange
+     already reads as "this needs attention" for both a call to action and a
+     failure, and a family with only three tones stays a family. */
+  --alarm: #e0392a;
+  --alarm-soft: rgba(224, 57, 42, 0.12);
 
-  /* Difficulty maps onto the same three states rather than adding hues. */
-  --easy: var(--earned);
-  --medium: var(--caution);
-  --hard: var(--alarm);
+  --easy: #f6d998;
+  --medium: #e2812f;
+  --hard: #e0392a;
 
-  /* ── spacing: 4px scale, no exceptions ───────────────────────────────── */
+  /* ── spacing ─────────────────────────────────────────────────────────── */
   --s1: 4px;
   --s2: 8px;
   --s3: 12px;
@@ -103,8 +93,6 @@
   --font-ui: "Urbanist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
 
-  /* Urbanist runs slightly small and open, so the scale sits a touch above
-     where a Helvetica-metric stack would. */
   --t-micro: 10.5px;
   --t-small: 12.5px;
   --t-body: 14.5px;
@@ -115,16 +103,14 @@
   --lh-lead: 1.3;
   --lh-body: 1.6;
 
-  /* Geometric faces need tightening as they scale up, and opening up when
-     set small in caps — otherwise the round forms read as loose. */
   --track-display: -0.025em;
   --track-lead: -0.015em;
   --track-body: 0.002em;
   --track-label: 0.12em;
 
   /* ── shape ───────────────────────────────────────────────────────────── */
-  --r-sm: 4px;   /* Discord's controls are squarer than most; matching that */
-  --r-md: 8px;
+  --r-sm: 4px;
+  --r-md: 7px;
 
   --ease: cubic-bezier(0.2, 0, 0, 1);
 }
@@ -133,33 +119,40 @@
   :root {
     color-scheme: light;
 
-    /* Discord's light theme, same relationships inverted. */
-    --ink-0: #f2f3f5;
+    /* Warm paper, not white — the same temperature bias as the dark page,
+       inverted rather than neutralised. */
+    --ink-0: #fbf4ec;
     --ink-1: #ffffff;
-    --ink-2: #ebedef;
-    --ink-3: #e3e5e8;
-    --ink-deep: #f9f9f9;
+    --ink-2: #f3e7da;
+    --ink-3: #ead7c2;
+    --ink-deep: #f6ede1;
 
-    --rule: rgba(0, 0, 0, 0.07);
-    --rule-2: #d8dade;
+    --rule: #e6d5c2;
+    --rule-2: #d6bfa4;
 
-    --text-1: #060607;
-    --text-2: #4e5058;
-    --text-3: #5c5e66;
+    --text-1: #241a12;
+    --text-2: #6b5643;
+    --text-3: #93816f;
 
-    --brand: #5865f2;
-    --brand-hover: #4752c4;
-    --brand-soft: rgba(88, 101, 242, 0.1);
-    --brand-line: rgba(88, 101, 242, 0.35);
+    /* Every accent steps darker than its dark-mode value — the same hues,
+       tuned for contrast against paper instead of charcoal. */
+    --brand: #c92f21;
+    --brand-hover: #a82418;
+    --brand-soft: rgba(201, 47, 33, 0.08);
+    --brand-line: rgba(201, 47, 33, 0.3);
 
-    --earned: #1a6334;
-    --earned-soft: rgba(26, 99, 52, 0.1);
-    --earned-line: rgba(26, 99, 52, 0.35);
+    /* Pale yellow has no readable dark-on-light form of itself, so "earned"
+       moves to the deep gold at the far end of the same hue instead of
+       reusing brand's red — the family stays warm without going amber-blind
+       between caution and success. */
+    --earned: #a15d00;
+    --earned-soft: rgba(161, 93, 0, 0.08);
+    --earned-line: rgba(161, 93, 0, 0.3);
 
-    --caution: #a84300;
-    --caution-soft: rgba(168, 67, 0, 0.1);
+    --caution: #b35a12;
+    --caution-soft: rgba(179, 90, 18, 0.08);
 
-    --alarm: #d83c3e;
-    --alarm-soft: rgba(216, 60, 62, 0.1);
+    --alarm: #c92f21;
+    --alarm-soft: rgba(201, 47, 33, 0.06);
   }
 }
