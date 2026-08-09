@@ -27,16 +27,16 @@ body {
   min-width: 320px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-feature-settings: "cv11", "ss01";  /* Inter: disambiguated 1/l/I, single-storey a */
+  letter-spacing: var(--track-body);
 }
 
-/* The mentor speaking. Serif, a step larger because serifs run small, and a
-   looser line height — this is text you are meant to think about, not scan. */
+/* Prose the mentor is speaking. Same family as the interface — hierarchy comes
+   from weight and measure rather than from mixing faces, which is the more
+   disciplined move and looks it. */
 .reads {
-  font-family: var(--font-read);
-  font-size: var(--t-read);
-  line-height: var(--lh-read);
-  letter-spacing: 0;
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  color: var(--text-2);
 }
 
 /* ── shared ─────────────────────────────────────────────────────────────── */
@@ -100,7 +100,7 @@ header {
   width: 6px;
   height: 2px;
   border-radius: 1px;
-  background: var(--gate);
+  background: var(--brand);
 }
 .logo::before { left: 3px; bottom: 4px; }
 .logo i       { left: 6px; bottom: 7px; }
@@ -139,7 +139,7 @@ input, textarea {
 input::placeholder, textarea::placeholder { color: var(--text-3); }
 input:focus, textarea:focus, select:focus {
   outline: none;
-  border-color: var(--gate-line);
+  border-color: var(--brand-line);
   background: var(--ink-2);
 }
 
@@ -176,7 +176,7 @@ button {
 }
 button:hover:not(:disabled) { background: var(--ink-2); border-color: var(--rule-2); }
 button:active:not(:disabled) { background: var(--ink-3); }
-button:focus-visible { outline: 2px solid var(--gate); outline-offset: 2px; }
+button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* The primary action is always "get a hint" — something that costs you — so it
@@ -184,16 +184,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 button.primary {
   width: 100%;
   padding: var(--s3);
-  background: var(--gate-soft);
-  border-color: var(--gate-line);
-  color: var(--gate);
+  background: var(--brand);
+  border-color: transparent;
+  color: #fff;
   font-weight: 600;
 }
-button.primary:hover:not(:disabled) {
-  background: var(--gate);
-  border-color: var(--gate);
-  color: var(--ink-0);
-}
+button.primary:hover:not(:disabled) { background: var(--brand-hover); border-color: transparent; }
 button.ghost { background: transparent; }
 
 /* ── panes, problem bar, tabs ───────────────────────────────────────────── */
@@ -228,7 +224,7 @@ button.ghost { background: transparent; }
 .badge.medium { color: var(--medium); }
 .badge.hard { color: var(--hard); }
 .badge.solved { color: var(--earned); }
-.badge.unverified { color: var(--gate); }
+.badge.unverified { color: var(--caution); }
 
 .tabs {
   display: flex;
@@ -249,7 +245,7 @@ button.ghost { background: transparent; }
   transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
 }
 .tab:hover:not(.active):not(.locked) { color: var(--text-1); background: transparent; }
-.tab.active { color: var(--text-1); border-bottom-color: var(--gate); font-weight: 650; }
+.tab.active { color: var(--text-1); border-bottom-color: var(--brand); font-weight: 650; }
 
 /* Locked tabs are shown, not hidden. The gate only motivates if you can see
    there is something behind it. */
@@ -286,7 +282,7 @@ button.ghost { background: transparent; }
   top: 4px;
   bottom: 4px;
   width: 1px;
-  background: linear-gradient(var(--gate-line), var(--rule));
+  background: linear-gradient(var(--brand-line), var(--rule));
 }
 
 .rung { position: relative; padding-bottom: var(--s4); }
@@ -301,15 +297,12 @@ button.ghost { background: transparent; }
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--gate);
+  background: var(--brand);
   box-shadow: 0 0 0 3px var(--ink-0);
 }
 
-.rung .lvl { color: var(--gate); margin-bottom: var(--s1); }
+.rung .lvl { color: var(--brand); margin-bottom: var(--s1); }
 .rung .body {
-  font-family: var(--font-read);
-  font-size: var(--t-read);
-  line-height: var(--lh-read);
 }
 
 .rung .report {
@@ -335,8 +328,8 @@ button.ghost { background: transparent; }
 
 .gate-note {
   padding: var(--s3);
-  border-left: 2px solid var(--gate-line);
-  background: var(--gate-soft);
+  border-left: 2px solid var(--brand-line);
+  background: var(--brand-soft);
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
   font-size: var(--t-small);
   color: var(--text-2);
@@ -356,7 +349,7 @@ button.ghost { background: transparent; }
 /* The review's opening line is the mentor talking, so it takes the serif — at
    lead size with tight tracking so it still reads as a headline. */
 .headline {
-  font-family: var(--font-read);
+  font-family: var(--font-ui);
   font-size: var(--t-lead);
   font-weight: 600;
   line-height: var(--lh-lead);
@@ -377,19 +370,16 @@ button.ghost { background: transparent; }
   font: 650 var(--t-micro) / 1 var(--font-mono);
   letter-spacing: var(--track-label);
   text-transform: uppercase;
-  color: var(--gate);
+  color: var(--brand);
   border: 1px solid currentColor;
   border-radius: 3px;
   padding: var(--s1) 6px;
   margin-bottom: var(--s2);
 }
 .reaction .stamp.good { color: var(--earned); }
-.reaction .stamp.warn { color: var(--gate); }
+.reaction .stamp.warn { color: var(--caution); }
 .reaction .stamp.bad { color: var(--alarm); }
 .reaction .line {
-  font-family: var(--font-read);
-  font-size: var(--t-read);
-  line-height: var(--lh-read);
   color: var(--text-2);
 }
 
@@ -410,7 +400,7 @@ button.ghost { background: transparent; }
   color: var(--text-1);
 }
 .cx .v.good { color: var(--earned); }
-.cx .v.warn { color: var(--gate); }
+.cx .v.warn { color: var(--caution); }
 .cx-sep { color: var(--text-3); font-size: var(--t-small); }
 
 section.lens { margin-bottom: var(--s5); }
@@ -422,9 +412,6 @@ section.lens h3 {
 section.lens ul { margin: 0; padding-left: var(--s4); }
 section.lens li {
   margin-bottom: var(--s2);
-  font-family: var(--font-read);
-  font-size: var(--t-read);
-  line-height: var(--lh-read);
 }
 section.lens li::marker { color: var(--text-3); }
 
@@ -451,7 +438,7 @@ section.lens li::marker { color: var(--text-3); }
   padding-top: 3px;
 }
 .failure code {
-  background: var(--ink-0);
+  background: var(--ink-deep);
   border: 1px solid var(--rule);
   border-radius: 3px;
   padding: 1px 5px;
@@ -463,7 +450,7 @@ section.lens li::marker { color: var(--text-3); }
   margin: var(--s5) 0 0;
   padding-top: var(--s4);
   border-top: 1px solid var(--rule);
-  font-family: var(--font-read);
+  font-family: var(--font-ui);
   font-size: var(--t-body);
   font-style: italic;
   color: var(--text-3);
@@ -482,7 +469,7 @@ section.lens li::marker { color: var(--text-3); }
   width: 26px;
   height: 20px;
   margin: 0 auto var(--s3);
-  border: 1.5px solid var(--gate-line);
+  border: 1.5px solid var(--brand-line);
   border-radius: 3px;
   position: relative;
 }
@@ -494,7 +481,7 @@ section.lens li::marker { color: var(--text-3); }
   width: 14px;
   height: 11px;
   transform: translateX(-50%);
-  border: 1.5px solid var(--gate-line);
+  border: 1.5px solid var(--brand-line);
   border-bottom: 0;
   border-radius: 7px 7px 0 0;
 }
@@ -540,7 +527,7 @@ section.lens li::marker { color: var(--text-3); }
 .approach-code {
   margin: var(--s2) 0 0;
   padding: var(--s3);
-  background: var(--ink-0);
+  background: var(--ink-deep);
   border: 1px solid var(--rule);
   border-radius: var(--r-sm);
   overflow-x: auto;
@@ -559,11 +546,8 @@ section.lens li::marker { color: var(--text-3); }
   border-bottom: 1px solid var(--rule);
 }
 .probe:last-child { border-bottom: 0; }
-.probe-n { color: var(--gate); margin-bottom: var(--s2); }
+.probe-n { color: var(--brand); margin-bottom: var(--s2); }
 .probe-q {
-  font-family: var(--font-read);
-  font-size: var(--t-read);
-  line-height: var(--lh-read);
   margin-bottom: var(--s3);
 }
 .probe-a { margin: 0 0 var(--s2); }
@@ -577,9 +561,6 @@ section.lens li::marker { color: var(--text-3); }
 }
 .probe-model p {
   margin: 0 0 var(--s3);
-  font-family: var(--font-read);
-  font-size: var(--t-read);
-  line-height: var(--lh-read);
 }
 .probe-model p:last-child { margin-bottom: 0; }
 .probe-label { color: var(--earned); margin-bottom: var(--s1); }
@@ -615,7 +596,7 @@ section.lens li::marker { color: var(--text-3); }
 .settings summary::before { content: "▸ "; color: var(--text-3); }
 .settings[open] summary::before { content: "▾ "; }
 
-::selection { background: var(--gate-soft); }
+::selection { background: var(--brand-soft); }
 
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }

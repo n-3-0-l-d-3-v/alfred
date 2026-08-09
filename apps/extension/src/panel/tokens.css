@@ -1,73 +1,94 @@
 /**
  * Design tokens.
  *
- * ── Colour ──────────────────────────────────────────────────────────────────
+ * ── Colour: one palette, taken whole ────────────────────────────────────────
  *
- * Cool dark neutrals with a warm accent. The ground is a Discord/Linear-family
- * grey ramp — proven for hours of dark-mode use, and neutral enough that one
- * accent can carry all the meaning. The accent is warm coral, in the family
- * Claude uses: putting a warm accent on a cool ground is what makes both look
- * chosen rather than defaulted, because the temperature contrast reads as
- * intentional even to someone who cannot name it.
+ * These are Discord's dark-theme values, used as a complete system rather than
+ * sampled from. That is the point: a palette is a set of relationships, and
+ * every colour in a good one was chosen against the others. Taking the greys
+ * from one product and the accent from another gives you two decisions that
+ * were never made together, which is exactly what the earlier coral-on-warm-grey
+ * version was — and why it read as assembled.
  *
- * The meaning behind the two hues is unchanged, because it is the part that was
- * working. This product is about earning access:
+ * Discord's ramp is also the right *kind* of palette for this: built for hours
+ * of dark-mode reading in a narrow panel beside other content, which is
+ * precisely what this is.
  *
- *   Coral  = costs you.    Hints, locks, pending, the primary action.
- *   Green  = you earned it. Solved, unlocked, optimal, revealed.
+ * The roles follow Discord's own usage, so the palette stays internally
+ * consistent instead of being repurposed:
  *
- * Colour is never decorative. Difficulty reuses the same scale rather than
- * introducing new hues, because Easy-to-Hard already means "what this costs".
+ *   Blurple  #5865F2  brand, primary action, active state, the hint ladder
+ *   Green    #23A55A  success — solved, unlocked, optimal
+ *   Yellow   #F0B232  caution — suboptimal, unverified, medium difficulty
+ *   Red      #DA373C  failure — errors, hard difficulty, what breaks
  *
- * ── Type ────────────────────────────────────────────────────────────────────
+ * ── Type: two real faces, bundled ───────────────────────────────────────────
  *
- * Three voices, each with a job. A panel set in one family at five sizes is
- * legible and anonymous; the split is what gives it a register.
+ * Urbanist for everything read, JetBrains Mono for everything measured. Both
+ * are bundled as woff2 rather than linked, because the extension CSP blocks
+ * external stylesheets and a webfont that silently fails to load is the
+ * difference between a designed panel and a default one. 57KB for the pair.
  *
- *   Serif  — the mentor speaking. Hints, the restatement, review prose.
- *   Sans   — the interface. Labels, buttons, tabs, metadata.
- *   Mono   — anything measured. Complexity, code, verdict stamps.
- *
- * That is a real distinction rather than decoration: when the app is telling
- * you something it sounds like a person, and when it is labelling its own
- * furniture it sounds like software. Serif also slows reading slightly, which
- * is correct for a hint you are meant to think about and wrong for a button.
- *
- * No webfonts: the extension CSP blocks external stylesheets, and bundling a
- * family costs a few hundred KB for a panel this small. The stacks below prefer
- * good faces where they exist and degrade to solid system defaults.
+ * Urbanist is a low-contrast geometric sans — the register modern product UI
+ * is set in, and distinct enough from the system stack that the panel reads as
+ * designed at a glance. Hierarchy comes from weight and size within one family
+ * rather than from mixing families, which is the more disciplined move and
+ * looks it.
  */
+
+/* Variable fonts: one file each, covering the whole weight range. */
+@font-face {
+  font-family: "Urbanist";
+  src: url("../fonts/urbanist.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;  /* block, not swap — a reflow mid-read is worse than 50ms */
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/jetbrains-mono.woff2") format("woff2-variations");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: block;
+}
 
 :root {
   color-scheme: dark;
 
-  /* ── neutrals: cool dark ramp ────────────────────────────────────────── */
-  --ink-0: #1a1b1e;   /* page */
-  --ink-1: #212328;   /* raised */
-  --ink-2: #2a2d34;   /* interactive */
-  --ink-3: #343841;   /* pressed / selected */
+  /* ── Discord dark ────────────────────────────────────────────────────── */
+  --ink-0: #2b2d31;   /* page — their sidebar tone, which is what this is */
+  --ink-1: #313338;   /* raised */
+  --ink-2: #383a40;   /* interactive / hover */
+  --ink-3: #404249;   /* pressed */
+  --ink-deep: #1e1f22; /* wells: code blocks, inputs */
 
   --rule: rgba(255, 255, 255, 0.06);
-  --rule-2: rgba(255, 255, 255, 0.12);
+  --rule-2: #3f4147;
 
-  --text-1: #e7e9ee;  /* primary */
-  --text-2: #a8adb8;  /* secondary */
-  --text-3: #767c8a;  /* labels, metadata */
+  --text-1: #f2f3f5;  /* header-primary */
+  --text-2: #b5bac1;  /* header-secondary */
+  --text-3: #949ba4;  /* muted */
 
-  /* ── the two-tone system ─────────────────────────────────────────────── */
-  --gate: #e07b5f;                          /* costs you */
-  --gate-soft: rgba(224, 123, 95, 0.13);
-  --gate-line: rgba(224, 123, 95, 0.34);
+  /* ── semantic roles ──────────────────────────────────────────────────── */
+  --brand: #5865f2;
+  --brand-hover: #4752c4;
+  --brand-soft: rgba(88, 101, 242, 0.15);
+  --brand-line: rgba(88, 101, 242, 0.4);
 
-  --earned: #3fb27f;                        /* you earned it */
-  --earned-soft: rgba(63, 178, 127, 0.13);
-  --earned-line: rgba(63, 178, 127, 0.34);
+  --earned: #23a55a;
+  --earned-soft: rgba(35, 165, 90, 0.15);
+  --earned-line: rgba(35, 165, 90, 0.4);
 
-  --alarm: #e05252;                         /* something is wrong */
-  --alarm-soft: rgba(224, 82, 82, 0.13);
+  --caution: #f0b232;
+  --caution-soft: rgba(240, 178, 50, 0.15);
 
+  --alarm: #da373c;
+  --alarm-soft: rgba(218, 55, 60, 0.15);
+
+  /* Difficulty maps onto the same three states rather than adding hues. */
   --easy: var(--earned);
-  --medium: var(--gate);
+  --medium: var(--caution);
   --hard: var(--alarm);
 
   /* ── spacing: 4px scale, no exceptions ───────────────────────────────── */
@@ -78,46 +99,32 @@
   --s5: 24px;
   --s6: 32px;
 
-  /* ── the three voices ────────────────────────────────────────────────── */
+  /* ── type ────────────────────────────────────────────────────────────── */
+  --font-ui: "Urbanist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
 
-  /* Interface. Inter and SF Pro Text are the best faces likely to be present;
-     Segoe UI Variable Text is the modern Windows default. */
-  --font-ui: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont,
-             "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  /* Urbanist runs slightly small and open, so the scale sits a touch above
+     where a Helvetica-metric stack would. */
+  --t-micro: 10.5px;
+  --t-small: 12.5px;
+  --t-body: 14.5px;
+  --t-lead: 17px;
+  --t-display: 23px;
 
-  /* The mentor's voice. Charter and Iowan Old Style ship with macOS and are
-     built for screen reading at small sizes; Georgia is the reliable fallback
-     everywhere else and was designed for exactly this. */
-  --font-read: "Charter", "Bitstream Charter", "Iowan Old Style",
-               "Source Serif 4", "Palatino Linotype", Georgia, serif;
+  --lh-display: 1.15;
+  --lh-lead: 1.3;
+  --lh-body: 1.6;
 
-  /* Anything measured. */
-  --font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", ui-monospace,
-               SFMono-Regular, Menlo, Consolas, monospace;
-
-  /* ── type scale ──────────────────────────────────────────────────────── */
-  --t-micro: 10.5px;  /* uppercase labels — always tracked and weighted */
-  --t-small: 12.5px;  /* metadata, help text */
-  --t-body: 14px;     /* interface prose */
-  --t-read: 15px;     /* the mentor speaking — serif runs small, so it is up a step */
-  --t-lead: 17px;     /* headlines */
-  --t-display: 22px;  /* the one number on screen that matters */
-
-  /* Line height by role, not one value everywhere. Tight for display so a
-     headline reads as one object; generous for reading so prose breathes. */
-  --lh-display: 1.18;
-  --lh-lead: 1.32;
-  --lh-body: 1.55;
-  --lh-read: 1.68;
-
-  /* Optical tracking: negative as size grows, positive on small caps. */
-  --track-display: -0.022em;
-  --track-lead: -0.014em;
-  --track-label: 0.1em;
+  /* Geometric faces need tightening as they scale up, and opening up when
+     set small in caps — otherwise the round forms read as loose. */
+  --track-display: -0.025em;
+  --track-lead: -0.015em;
+  --track-body: 0.002em;
+  --track-label: 0.12em;
 
   /* ── shape ───────────────────────────────────────────────────────────── */
-  --r-sm: 6px;
-  --r-md: 10px;
+  --r-sm: 4px;   /* Discord's controls are squarer than most; matching that */
+  --r-md: 8px;
 
   --ease: cubic-bezier(0.2, 0, 0, 1);
 }
@@ -126,31 +133,33 @@
   :root {
     color-scheme: light;
 
-    /* Warm off-white rather than pure white — easier on the eye for long
-       reading, and it keeps the coral accent from looking neon. */
-    --ink-0: #faf9f7;
+    /* Discord's light theme, same relationships inverted. */
+    --ink-0: #f2f3f5;
     --ink-1: #ffffff;
-    --ink-2: #f1efec;
-    --ink-3: #e6e3de;
+    --ink-2: #ebedef;
+    --ink-3: #e3e5e8;
+    --ink-deep: #f9f9f9;
 
-    --rule: rgba(0, 0, 0, 0.08);
-    --rule-2: rgba(0, 0, 0, 0.15);
+    --rule: rgba(0, 0, 0, 0.07);
+    --rule-2: #d8dade;
 
-    --text-1: #1f2126;
-    --text-2: #5a5f6b;
-    --text-3: #878d99;
+    --text-1: #060607;
+    --text-2: #4e5058;
+    --text-3: #5c5e66;
 
-    /* Darkened so both hues keep their meaning on a light ground — the same
-       coral that glows on charcoal washes out on paper. */
-    --gate: #c2542f;
-    --gate-soft: rgba(194, 84, 47, 0.10);
-    --gate-line: rgba(194, 84, 47, 0.28);
+    --brand: #5865f2;
+    --brand-hover: #4752c4;
+    --brand-soft: rgba(88, 101, 242, 0.1);
+    --brand-line: rgba(88, 101, 242, 0.35);
 
-    --earned: #1f7a54;
-    --earned-soft: rgba(31, 122, 84, 0.10);
-    --earned-line: rgba(31, 122, 84, 0.28);
+    --earned: #1a6334;
+    --earned-soft: rgba(26, 99, 52, 0.1);
+    --earned-line: rgba(26, 99, 52, 0.35);
 
-    --alarm: #b3372f;
-    --alarm-soft: rgba(179, 55, 47, 0.10);
+    --caution: #a84300;
+    --caution-soft: rgba(168, 67, 0, 0.1);
+
+    --alarm: #d83c3e;
+    --alarm-soft: rgba(216, 60, 62, 0.1);
   }
 }
