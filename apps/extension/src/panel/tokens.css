@@ -1,69 +1,71 @@
 /**
  * Design tokens.
  *
- * Split out from panel.css so the system is legible as a system: if the values
- * live scattered among the rules that use them, there is no design, only a pile
- * of decisions.
+ * ── Colour ──────────────────────────────────────────────────────────────────
  *
- * ── The idea the visuals are built on ────────────────────────────────────────
+ * Cool dark neutrals with a warm accent. The ground is a Discord/Linear-family
+ * grey ramp — proven for hours of dark-mode use, and neutral enough that one
+ * accent can carry all the meaning. The accent is warm coral, in the family
+ * Claude uses: putting a warm accent on a cool ground is what makes both look
+ * chosen rather than defaulted, because the temperature contrast reads as
+ * intentional even to someone who cannot name it.
  *
- * This product is about *earning access*. Everything else follows from that:
+ * The meaning behind the two hues is unchanged, because it is the part that was
+ * working. This product is about earning access:
  *
- *   Warm ochre  = things that cost you.    Hints, locks, pending state.
- *   Cool jade   = things you earned.       Solved, unlocked, optimal.
- *   Neutral     = everything else.
+ *   Coral  = costs you.    Hints, locks, pending, the primary action.
+ *   Green  = you earned it. Solved, unlocked, optimal, revealed.
  *
- * Colour is never decorative. If something is coloured, it is telling you which
- * side of the gate it sits on — which is why difficulty reuses the same two
- * hues rather than introducing three more. A panel that greets you in one hue
- * and congratulates you in another teaches the gate without a sentence of copy.
+ * Colour is never decorative. Difficulty reuses the same scale rather than
+ * introducing new hues, because Easy-to-Hard already means "what this costs".
  *
- * ── Neutrals ────────────────────────────────────────────────────────────────
+ * ── Type ────────────────────────────────────────────────────────────────────
  *
- * Warm-leaning, not blue-grey. Blue-grey darks read as generic dashboard; a
- * warm dark reads closer to a terminal or to paper, which is the register a
- * tool for reading code should be in. The steps between surfaces are small on
- * purpose — hierarchy comes from space and hairlines, not from stacked boxes.
+ * Three voices, each with a job. A panel set in one family at five sizes is
+ * legible and anonymous; the split is what gives it a register.
  *
- * ── Scales ──────────────────────────────────────────────────────────────────
+ *   Serif  — the mentor speaking. Hints, the restatement, review prose.
+ *   Sans   — the interface. Labels, buttons, tabs, metadata.
+ *   Mono   — anything measured. Complexity, code, verdict stamps.
  *
- * Spacing is a 4px scale and nothing else. Type is five sizes, each with a job.
- * Arbitrary values (11px here, 13px there) are the single most reliable tell
- * that a UI was assembled rather than designed, because the eye reads the
- * inconsistency long before it can name it.
+ * That is a real distinction rather than decoration: when the app is telling
+ * you something it sounds like a person, and when it is labelling its own
+ * furniture it sounds like software. Serif also slows reading slightly, which
+ * is correct for a hint you are meant to think about and wrong for a button.
+ *
+ * No webfonts: the extension CSP blocks external stylesheets, and bundling a
+ * family costs a few hundred KB for a panel this small. The stacks below prefer
+ * good faces where they exist and degrade to solid system defaults.
  */
 
 :root {
   color-scheme: dark;
 
-  /* ── neutrals: warm dark ─────────────────────────────────────────────── */
-  --ink-0: #0c0c0d;   /* page */
-  --ink-1: #131314;   /* raised */
-  --ink-2: #1b1b1d;   /* raised, interactive */
-  --ink-3: #232326;   /* pressed / selected */
+  /* ── neutrals: cool dark ramp ────────────────────────────────────────── */
+  --ink-0: #1a1b1e;   /* page */
+  --ink-1: #212328;   /* raised */
+  --ink-2: #2a2d34;   /* interactive */
+  --ink-3: #343841;   /* pressed / selected */
 
-  --rule: rgba(255, 255, 255, 0.07);   /* hairline */
-  --rule-2: rgba(255, 255, 255, 0.13); /* emphasis hairline */
+  --rule: rgba(255, 255, 255, 0.06);
+  --rule-2: rgba(255, 255, 255, 0.12);
 
-  --text-1: #f0efec;  /* primary — warm white */
-  --text-2: #a3a19c;  /* secondary */
-  --text-3: #6f6d69;  /* labels, metadata */
+  --text-1: #e7e9ee;  /* primary */
+  --text-2: #a8adb8;  /* secondary */
+  --text-3: #767c8a;  /* labels, metadata */
 
   /* ── the two-tone system ─────────────────────────────────────────────── */
-  --gate: #cf9a45;                          /* costs you */
-  --gate-soft: rgba(207, 154, 69, 0.13);
-  --gate-line: rgba(207, 154, 69, 0.32);
+  --gate: #e07b5f;                          /* costs you */
+  --gate-soft: rgba(224, 123, 95, 0.13);
+  --gate-line: rgba(224, 123, 95, 0.34);
 
-  --earned: #5ea88a;                        /* you earned it */
-  --earned-soft: rgba(94, 168, 138, 0.13);
-  --earned-line: rgba(94, 168, 138, 0.32);
+  --earned: #3fb27f;                        /* you earned it */
+  --earned-soft: rgba(63, 178, 127, 0.13);
+  --earned-line: rgba(63, 178, 127, 0.34);
 
-  --alarm: #c2665f;                         /* something is wrong */
-  --alarm-soft: rgba(194, 102, 95, 0.13);
+  --alarm: #e05252;                         /* something is wrong */
+  --alarm-soft: rgba(224, 82, 82, 0.13);
 
-  /* Difficulty deliberately reuses the two-tone scale rather than adding a
-     third and fourth hue. Easy is earned-coloured, Hard is alarm — the ramp
-     already means "how much this will cost you". */
   --easy: var(--earned);
   --medium: var(--gate);
   --hard: var(--alarm);
@@ -76,24 +78,46 @@
   --s5: 24px;
   --s6: 32px;
 
-  /* ── type: five sizes, each with a job ───────────────────────────────── */
-  --t-micro: 10px;    /* uppercase labels; always tracked and weighted */
-  --t-small: 12px;    /* metadata, help text */
-  --t-body: 13.5px;   /* everything you actually read */
-  --t-lead: 15px;     /* section leads, headlines */
-  --t-display: 19px;  /* the one number on a screen that matters */
+  /* ── the three voices ────────────────────────────────────────────────── */
 
-  --lh-tight: 1.25;
-  --lh-body: 1.6;
-  --track-label: 0.09em;
+  /* Interface. Inter and SF Pro Text are the best faces likely to be present;
+     Segoe UI Variable Text is the modern Windows default. */
+  --font-ui: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+             "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
 
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  /* The mentor's voice. Charter and Iowan Old Style ship with macOS and are
+     built for screen reading at small sizes; Georgia is the reliable fallback
+     everywhere else and was designed for exactly this. */
+  --font-read: "Charter", "Bitstream Charter", "Iowan Old Style",
+               "Source Serif 4", "Palatino Linotype", Georgia, serif;
+
+  /* Anything measured. */
+  --font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", ui-monospace,
+               SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ── type scale ──────────────────────────────────────────────────────── */
+  --t-micro: 10.5px;  /* uppercase labels — always tracked and weighted */
+  --t-small: 12.5px;  /* metadata, help text */
+  --t-body: 14px;     /* interface prose */
+  --t-read: 15px;     /* the mentor speaking — serif runs small, so it is up a step */
+  --t-lead: 17px;     /* headlines */
+  --t-display: 22px;  /* the one number on screen that matters */
+
+  /* Line height by role, not one value everywhere. Tight for display so a
+     headline reads as one object; generous for reading so prose breathes. */
+  --lh-display: 1.18;
+  --lh-lead: 1.32;
+  --lh-body: 1.55;
+  --lh-read: 1.68;
+
+  /* Optical tracking: negative as size grows, positive on small caps. */
+  --track-display: -0.022em;
+  --track-lead: -0.014em;
+  --track-label: 0.1em;
 
   /* ── shape ───────────────────────────────────────────────────────────── */
-  /* Two radii. A third is always someone forgetting the other two exist. */
-  --r-sm: 5px;
-  --r-md: 9px;
+  --r-sm: 6px;
+  --r-md: 10px;
 
   --ease: cubic-bezier(0.2, 0, 0, 1);
 }
@@ -102,29 +126,31 @@
   :root {
     color-scheme: light;
 
-    --ink-0: #fbfaf8;
+    /* Warm off-white rather than pure white — easier on the eye for long
+       reading, and it keeps the coral accent from looking neon. */
+    --ink-0: #faf9f7;
     --ink-1: #ffffff;
-    --ink-2: #f4f2ee;
-    --ink-3: #eae7e1;
+    --ink-2: #f1efec;
+    --ink-3: #e6e3de;
 
-    --rule: rgba(0, 0, 0, 0.09);
-    --rule-2: rgba(0, 0, 0, 0.16);
+    --rule: rgba(0, 0, 0, 0.08);
+    --rule-2: rgba(0, 0, 0, 0.15);
 
-    --text-1: #1a1a19;
-    --text-2: #5c5a56;
-    --text-3: #8a8782;
+    --text-1: #1f2126;
+    --text-2: #5a5f6b;
+    --text-3: #878d99;
 
-    /* Darkened so both hues hold their meaning against a light ground —
-       the same ochre that reads warm on black reads washed-out on paper. */
-    --gate: #9a6a1c;
-    --gate-soft: rgba(154, 106, 28, 0.10);
-    --gate-line: rgba(154, 106, 28, 0.28);
+    /* Darkened so both hues keep their meaning on a light ground — the same
+       coral that glows on charcoal washes out on paper. */
+    --gate: #c2542f;
+    --gate-soft: rgba(194, 84, 47, 0.10);
+    --gate-line: rgba(194, 84, 47, 0.28);
 
-    --earned: #2f7a5d;
-    --earned-soft: rgba(47, 122, 93, 0.10);
-    --earned-line: rgba(47, 122, 93, 0.28);
+    --earned: #1f7a54;
+    --earned-soft: rgba(31, 122, 84, 0.10);
+    --earned-line: rgba(31, 122, 84, 0.28);
 
-    --alarm: #a8433c;
-    --alarm-soft: rgba(168, 67, 60, 0.10);
+    --alarm: #b3372f;
+    --alarm-soft: rgba(179, 55, 47, 0.10);
   }
 }
