@@ -1,0 +1,13 @@
+Urbanist — Copyright 2020 The Urbanist Project Authors
+  https://github.com/coreyhu/Urbanist
+JetBrains Mono — Copyright 2020 The JetBrains Mono Project Authors
+  https://github.com/JetBrains/JetBrainsMono
+
+Both are licensed under the SIL Open Font License, Version 1.1.
+  https://openfontlicense.org
+
+The OFL permits bundling and redistribution inside an application, which is
+why these ship in the extension rather than being loaded from a CDN: the
+extension CSP blocks external stylesheets, and a webfont that fails to load
+silently falls back to a system face, which is the difference between a
+designed panel and a default one.

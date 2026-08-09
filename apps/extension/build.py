@@ -33,6 +33,8 @@ REQUIRED = [
     "panel/tokens.css",
     "panel/panel.css",
     "panel/panel.js",
+    "fonts/urbanist.woff2",
+    "fonts/jetbrains-mono.woff2",
 ]
 
 
