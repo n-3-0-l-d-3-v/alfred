@@ -1,0 +1,54 @@
+name: release
+
+# The actual mechanism behind a "smoother install": push a version tag, and a
+# signed-looking, ready-to-download zip for each browser appears on the
+# repo's Releases page a minute later — no local build step for anyone
+# picking the extension up.
+#
+# This does NOT publish to the Chrome Web Store or addons.mozilla.org. Store
+# listings need a developer account (and, for Chrome, a one-time $5 fee) tied
+# to a real identity — that's a human decision this workflow can't make on
+# anyone's behalf. What it removes is everything mechanical: cloning the
+# repo, having Python installed, and running the build script correctly.
+#
+# To cut a release:
+#   git tag v0.2.0 && git push origin v0.2.0
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build Chrome + Firefox zips
+        working-directory: apps/extension
+        run: python3 build.py --zip
+
+      - name: Attach zips to the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/extension/dist/leetlearn-chrome.zip
+            apps/extension/dist/leetlearn-firefox.zip
+          body: |
+            **Chrome / Edge / Brave (any Chromium browser):**
+            1. Download `leetlearn-chrome.zip` below and unzip it.
+            2. Go to `chrome://extensions`, turn on *Developer mode* (top right).
+            3. Click *Load unpacked* and select the unzipped folder.
+
+            **Firefox:**
+            1. Download `leetlearn-firefox.zip` below and unzip it.
+            2. Go to `about:debugging#/runtime/this-firefox`.
+            3. Click *Load Temporary Add-on* and select `manifest.json` inside the unzipped folder.
+               (Firefox unloads temporary add-ons on restart — that's a Firefox
+               limitation for unsigned extensions, not something this project controls.)
