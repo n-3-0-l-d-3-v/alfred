@@ -1,0 +1,130 @@
+/**
+ * Design tokens.
+ *
+ * Split out from panel.css so the system is legible as a system: if the values
+ * live scattered among the rules that use them, there is no design, only a pile
+ * of decisions.
+ *
+ * ── The idea the visuals are built on ────────────────────────────────────────
+ *
+ * This product is about *earning access*. Everything else follows from that:
+ *
+ *   Warm ochre  = things that cost you.    Hints, locks, pending state.
+ *   Cool jade   = things you earned.       Solved, unlocked, optimal.
+ *   Neutral     = everything else.
+ *
+ * Colour is never decorative. If something is coloured, it is telling you which
+ * side of the gate it sits on — which is why difficulty reuses the same two
+ * hues rather than introducing three more. A panel that greets you in one hue
+ * and congratulates you in another teaches the gate without a sentence of copy.
+ *
+ * ── Neutrals ────────────────────────────────────────────────────────────────
+ *
+ * Warm-leaning, not blue-grey. Blue-grey darks read as generic dashboard; a
+ * warm dark reads closer to a terminal or to paper, which is the register a
+ * tool for reading code should be in. The steps between surfaces are small on
+ * purpose — hierarchy comes from space and hairlines, not from stacked boxes.
+ *
+ * ── Scales ──────────────────────────────────────────────────────────────────
+ *
+ * Spacing is a 4px scale and nothing else. Type is five sizes, each with a job.
+ * Arbitrary values (11px here, 13px there) are the single most reliable tell
+ * that a UI was assembled rather than designed, because the eye reads the
+ * inconsistency long before it can name it.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ── neutrals: warm dark ─────────────────────────────────────────────── */
+  --ink-0: #0c0c0d;   /* page */
+  --ink-1: #131314;   /* raised */
+  --ink-2: #1b1b1d;   /* raised, interactive */
+  --ink-3: #232326;   /* pressed / selected */
+
+  --rule: rgba(255, 255, 255, 0.07);   /* hairline */
+  --rule-2: rgba(255, 255, 255, 0.13); /* emphasis hairline */
+
+  --text-1: #f0efec;  /* primary — warm white */
+  --text-2: #a3a19c;  /* secondary */
+  --text-3: #6f6d69;  /* labels, metadata */
+
+  /* ── the two-tone system ─────────────────────────────────────────────── */
+  --gate: #cf9a45;                          /* costs you */
+  --gate-soft: rgba(207, 154, 69, 0.13);
+  --gate-line: rgba(207, 154, 69, 0.32);
+
+  --earned: #5ea88a;                        /* you earned it */
+  --earned-soft: rgba(94, 168, 138, 0.13);
+  --earned-line: rgba(94, 168, 138, 0.32);
+
+  --alarm: #c2665f;                         /* something is wrong */
+  --alarm-soft: rgba(194, 102, 95, 0.13);
+
+  /* Difficulty deliberately reuses the two-tone scale rather than adding a
+     third and fourth hue. Easy is earned-coloured, Hard is alarm — the ramp
+     already means "how much this will cost you". */
+  --easy: var(--earned);
+  --medium: var(--gate);
+  --hard: var(--alarm);
+
+  /* ── spacing: 4px scale, no exceptions ───────────────────────────────── */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+
+  /* ── type: five sizes, each with a job ───────────────────────────────── */
+  --t-micro: 10px;    /* uppercase labels; always tracked and weighted */
+  --t-small: 12px;    /* metadata, help text */
+  --t-body: 13.5px;   /* everything you actually read */
+  --t-lead: 15px;     /* section leads, headlines */
+  --t-display: 19px;  /* the one number on a screen that matters */
+
+  --lh-tight: 1.25;
+  --lh-body: 1.6;
+  --track-label: 0.09em;
+
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ── shape ───────────────────────────────────────────────────────────── */
+  /* Two radii. A third is always someone forgetting the other two exist. */
+  --r-sm: 5px;
+  --r-md: 9px;
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+
+    --ink-0: #fbfaf8;
+    --ink-1: #ffffff;
+    --ink-2: #f4f2ee;
+    --ink-3: #eae7e1;
+
+    --rule: rgba(0, 0, 0, 0.09);
+    --rule-2: rgba(0, 0, 0, 0.16);
+
+    --text-1: #1a1a19;
+    --text-2: #5c5a56;
+    --text-3: #8a8782;
+
+    /* Darkened so both hues hold their meaning against a light ground —
+       the same ochre that reads warm on black reads washed-out on paper. */
+    --gate: #9a6a1c;
+    --gate-soft: rgba(154, 106, 28, 0.10);
+    --gate-line: rgba(154, 106, 28, 0.28);
+
+    --earned: #2f7a5d;
+    --earned-soft: rgba(47, 122, 93, 0.10);
+    --earned-line: rgba(47, 122, 93, 0.28);
+
+    --alarm: #a8433c;
+    --alarm-soft: rgba(168, 67, 60, 0.10);
+  }
+}
