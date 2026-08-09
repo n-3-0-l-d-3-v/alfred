@@ -456,7 +456,16 @@
   async function loadProgress() {
     try {
       const p = await LL.api.progress();
-      $("streak").textContent = `🔥 ${p.streak_current}  ·  ${p.xp_total} XP`;
+      // Typographic, matching the reaction stamps — no emoji. The streak
+      // number gets the "earned" colour only once there's something to show
+      // for it; a lit-up "0" would be the same false-signal problem the fire
+      // emoji had, just in a different font.
+      $("streak").innerHTML =
+        `<span class="streak-n${p.streak_current > 0 ? " earned" : ""}">${p.streak_current}</span>` +
+        `<span class="streak-l">day streak</span>` +
+        `<span class="streak-sep">·</span>` +
+        `<span class="streak-n">${p.xp_total}</span>` +
+        `<span class="streak-l">xp</span>`;
       $("progressBody").innerHTML = `
         <div class="stat-grid">
           <div class="stat"><div class="n">${p.streak_current}</div><div class="l">day streak</div></div>

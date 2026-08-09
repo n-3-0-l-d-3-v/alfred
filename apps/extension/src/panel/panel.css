@@ -115,13 +115,33 @@ header {
   white-space: nowrap;
 }
 
+/* Streak/XP readout. Typographic — see the reaction-stamp comment below for
+   why nothing in this panel is an emoji: a joke or a signal that lives in a
+   glyph someone else drew ages badly and reads as generated. The streak
+   number carries the emphasis instead, the same way `.reaction .stamp` does. */
 .streak {
   flex: none;
-  font-size: var(--t-small);
-  color: var(--text-2);
+  display: flex;
+  align-items: baseline;
+  gap: 0.32em;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+.streak-n {
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  font-weight: 650;
+  color: var(--text-2);
+}
+.streak-n.earned { color: var(--earned); }
+.streak-l {
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.streak-sep { color: var(--rule-2); margin: 0 0.1em; }
 
 /* ── controls ───────────────────────────────────────────────────────────── */
 
