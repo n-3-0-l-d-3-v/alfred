@@ -32,11 +32,28 @@ LL.api = (function () {
         body: body ? JSON.stringify(body) : null,
       });
     } catch (e) {
-      throw new Error(`Can't reach the LeetLearn server. Is it running? (${e.message})`);
+      const err = new Error(`Can't reach the LeetLearn server. Is it running? (${e.message})`);
+      // Flagged rather than string-matched: the panel renders this as a
+      // retryable state with the configured address, not as a failure of the
+      // feature the learner happened to click.
+      err.offline = true;
+      throw err;
     }
     const text = await res.text();
     const data = text ? JSON.parse(text) : {};
     if (!res.ok) {
+      if (res.status === 401 && auth) {
+        // The stored token no longer identifies anyone — expired, or minted
+        // against a database that has since been rebuilt. Holding on to it
+        // makes every subsequent call fail the same way, which is how a stale
+        // token turned into a permanent "unknown user" with no way out but
+        // clearing storage by hand. Drop it so the panel can show sign-in.
+        await LL.storage.set({ token: null });
+        const err = new Error(data.detail || "Your session expired — sign in again.");
+        err.status = 401;
+        err.signedOut = true;
+        throw err;
+      }
       const err = new Error(data.detail || `HTTP ${res.status}`);
       err.status = res.status;
       throw err;

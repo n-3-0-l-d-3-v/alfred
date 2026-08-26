@@ -25,7 +25,34 @@
 
   function show(paneId) {
     for (const p of ["auth", "notProblem", "main"]) $(p).classList.toggle("hidden", p !== paneId);
+    // The header label is the one piece of chrome outside the panes, so nothing
+    // else resets it. Left alone it kept reading "not on a problem" over a
+    // fully loaded problem, because only the success path ever wrote to it.
+    if (paneId !== "main") $("contextLabel").textContent = "not on a problem";
   }
+
+  /** Render a failure inside `el`, routing the two states that aren't the
+   *  feature's fault: an unreachable server and an expired session. */
+  function renderFailure(el, e, retry) {
+    if (e?.signedOut) {
+      show("auth");
+      $("authError").textContent = e.message;
+      return;
+    }
+    if (e?.offline) {
+      $(el).innerHTML =
+        `<p class="error">Can't reach the LeetLearn server.</p>
+         <p class="muted small">The panel is pointed at <code>${esc(apiBaseShown)}</code>.
+            Start the API and press retry — nothing is lost.</p>
+         <button id="retryBoot" class="primary">Retry</button>`;
+      const b = $("retryBoot");
+      if (b) b.addEventListener("click", retry || boot);
+      return;
+    }
+    $(el).innerHTML = `<p class="error">${esc(e?.message ?? "Something went wrong.")}</p>`;
+  }
+
+  let apiBaseShown = "http://localhost:8000";
 
   // ---------- context ----------
 
@@ -78,6 +105,9 @@
     }
     state.ctx = ctx;
     show("main");
+    // Set from the page immediately. Waiting for the card meant a slow or
+    // failing card load left the header contradicting the panel underneath it.
+    $("contextLabel").textContent = ctx.title || ctx.slug;
 
     try {
       // The adapter reports null when it genuinely could not read the language.
@@ -89,11 +119,7 @@
       state.solved = s.solved;
       await Promise.all([loadCard(), loadProgress(), loadPersonas()]);
     } catch (e) {
-      $("understandBody").innerHTML =
-        `<p class="error">${esc(e.message)}</p>` +
-        (e.status === 404
-          ? `<p class="muted small">There's no Problem Card for <code>${esc(ctx.slug)}</code> yet. The knowledge base currently covers a small seed set.</p>`
-          : "");
+      renderFailure("understandBody", e);
     }
   }
 
@@ -252,7 +278,7 @@
       const r = await LL.api.review(state.sessionId, code, $("persona").value, state.failedAttempts);
       renderReview(r);
     } catch (e) {
-      $("reviewOut").innerHTML = `<p class="error">${esc(e.message)}</p>`;
+      renderFailure("reviewOut", e, () => reviewWith(code));
     }
   }
 
@@ -494,7 +520,7 @@
         <p class="muted small">${p.card_hints_left_today} hint reads left today · ${p.llm_calls_left_today} AI calls left today</p>
       `;
     } catch (e) {
-      $("progressBody").innerHTML = `<p class="error">${esc(e.message)}</p>`;
+      renderFailure("progressBody", e, loadProgress);
     }
   }
 
@@ -542,7 +568,8 @@
 
   document.addEventListener("DOMContentLoaded", async () => {
     const { apiBase } = await LL.storage.get(["apiBase"]);
-    $("apiBase").value = apiBase || "http://localhost:8000";
+    apiBaseShown = apiBase || "http://localhost:8000";
+    $("apiBase").value = apiBaseShown;
 
     for (const t of document.querySelectorAll(".tab")) {
       t.addEventListener("click", () => switchTab(t.dataset.tab));
