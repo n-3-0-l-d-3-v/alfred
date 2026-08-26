@@ -48,7 +48,7 @@ def test_full_solution_unlocks_after_ac(db, user, service):
     db.add(s)
     db.commit()
     progress.on_verdict(db, user, s, "Accepted")
-    payload = service.post_ac_payload(s)
+    payload = service.post_ac_payload(db, s)
     # Now — and only now — real code is available.
     assert payload.approaches
     assert any(a.code for a in payload.approaches)
@@ -59,7 +59,7 @@ def test_post_ac_payload_blocked_before_ac(db, user, service):
     db.add(s)
     db.commit()
     with pytest.raises(HintGateError):
-        service.post_ac_payload(s)
+        service.post_ac_payload(db, s)
 
 
 def test_pre_ac_hint_schema_rejects_code_defense_in_depth():
@@ -93,4 +93,4 @@ def test_review_blocked_before_ac(db, user, service):
     db.add(s)
     db.commit()
     with pytest.raises(HintGateError):
-        service.review(s, "def twoSum(nums, target): ...")
+        service.review(db, s, "def twoSum(nums, target): ...")

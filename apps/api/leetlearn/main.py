@@ -19,6 +19,7 @@ from .analysis.registry import supported_languages
 from .auth import AuthError, current_user, exchange_github_code, issue_token, upsert_github_user
 from .config import get_settings
 from .db import get_db, init_db
+from . import problem_meta
 from .gamification import budget, progress, streaks
 from .mentor import personas
 from .mentor.cards import CardStore
@@ -72,6 +73,13 @@ class StartSession(BaseModel):
     language: str = "python"
     # Defaults to leetcode so existing clients keep working unchanged.
     platform: str = "leetcode"
+    # What the page said about the problem. Optional: an older extension build,
+    # or an adapter for a site with nothing to read, simply omits it and the
+    # problem is taught from the pattern-free ladder instead.
+    title: str | None = None
+    difficulty: str | None = None
+    topics: list[str] = []
+    statement: str | None = None
 
 
 class AnalyzeIn(BaseModel):
@@ -178,8 +186,23 @@ def start_session(body: StartSession, user: User = Depends(current_user), db: Db
     and re-lock a problem the learner already solved, so closing the sidebar
     would launder a hinted solve into a clean one.
     """
-    if cards.get(body.slug) is None:
-        raise HTTPException(404, f"no problem card for '{body.slug}' yet (KB covers {cards.slugs()})")
+    # Record what the page told us before touching the card, so the card can be
+    # rebuilt from it on any later request — see `ProblemMeta`.
+    meta = problem_meta.remember(
+        db,
+        platform=body.platform,
+        slug=body.slug,
+        title=body.title,
+        difficulty=body.difficulty,
+        topics=body.topics,
+        statement=body.statement,
+    )
+    # No 404 any more. A problem nobody authored a card for is generated from
+    # the pattern it looks like, or taught from first principles when no pattern
+    # is clear enough to claim. Refusing to open the session was the single
+    # largest hole in the product: the knowledge base covers a few dozen
+    # problems and the site has thousands, so the common case was a dead panel.
+    card = cards.get_or_synthesize(body.slug, **problem_meta.as_kwargs(meta))
 
     s = db.scalar(
         select(Session)
@@ -255,7 +278,7 @@ def review(
     s = _load_session(session_id, user, db)
     try:
         return hints.review(
-            s, body.code, persona=body.persona, failed_attempts=body.failed_attempts
+            db, s, body.code, persona=body.persona, failed_attempts=body.failed_attempts
         ).model_dump()
     except HintGateError as e:
         raise HTTPException(403, str(e))
@@ -278,7 +301,7 @@ def interview(
     """Interview questions about this submission. Answers withheld — see below."""
     s = _load_session(session_id, user, db)
     try:
-        return {"questions": hints.interview(s, body.code, limit=body.limit)}
+        return {"questions": hints.interview(db, s, body.code, limit=body.limit)}
     except HintGateError as e:
         raise HTTPException(403, str(e))
     except CardMissingError:
@@ -300,7 +323,7 @@ def interview_answers(
     """
     s = _load_session(session_id, user, db)
     try:
-        return {"answers": hints.interview_answers(s, body.code, limit=body.limit)}
+        return {"answers": hints.interview_answers(db, s, body.code, limit=body.limit)}
     except HintGateError as e:
         raise HTTPException(403, str(e))
     except CardMissingError:
@@ -326,7 +349,7 @@ def unlocked(session_id: int, user: User = Depends(current_user), db: DbSession 
     """The post-AC firehose. 403 until the problem is solved."""
     s = _load_session(session_id, user, db)
     try:
-        return hints.post_ac_payload(s).model_dump()
+        return hints.post_ac_payload(db, s).model_dump()
     except HintGateError as e:
         raise HTTPException(403, str(e))
     except CardMissingError:
@@ -337,9 +360,8 @@ def unlocked(session_id: int, user: User = Depends(current_user), db: DbSession 
 def card_view(session_id: int, user: User = Depends(current_user), db: DbSession = Depends(get_db)) -> dict:
     """Card content, redacted by AC state: pre-AC hides all solution code."""
     s = _load_session(session_id, user, db)
-    card = cards.get(s.slug)
-    if card is None:
-        raise HTTPException(404, "no card")
+    meta = problem_meta.lookup(db, s.platform, s.slug)
+    card = cards.get_or_synthesize(s.slug, **problem_meta.as_kwargs(meta))
     view = {
         "slug": card.slug,
         "title": card.title,
@@ -348,6 +370,12 @@ def card_view(session_id: int, user: User = Depends(current_user), db: DbSession
         "understanding": card.understanding,
         "patterns": [p.model_dump() for p in card.patterns],
         "solved": s.solved,
+        # The panel has always rendered an "unverified" badge off this field,
+        # and the endpoint never sent it — so every generated card was shown
+        # with the same authority as a hand-checked one, and the report link
+        # next to it had nothing to explain itself.
+        "verified": card.verified,
+        "generated_by": card.generated_by,
     }
     if s.solved:
         view["approaches"] = [a.model_dump() for a in card.approaches]

@@ -70,7 +70,49 @@ def test_platform_defaults_to_leetcode_for_older_clients(client, user):
     assert r["platform"] == "leetcode"
 
 
-def test_unknown_slug_is_rejected_before_a_session_is_created(client, db, user):
-    r = client.post("/sessions", json={"slug": "no-such-problem"}, headers=_auth(user))
-    assert r.status_code == 404
-    assert db.query(Session).count() == 0
+def test_an_unauthored_problem_opens_a_session_instead_of_404ing(client, db, user):
+    """The knowledge base covers a few dozen problems; the site has thousands.
+
+    Refusing the rest was the largest hole in the product — a learner on any
+    problem nobody had hand-authored got a dead panel. A card is now generated
+    from the pattern the problem looks like, so the session opens.
+    """
+    r = client.post(
+        "/sessions",
+        json={
+            "slug": "some-unauthored-problem",
+            "title": "999. Some Unauthored Problem",
+            "difficulty": "Medium",
+            "topics": ["array", "hash-table"],
+            "statement": "return indices of the two numbers such that they add up to target",
+        },
+        headers=_auth(user),
+    )
+    assert r.status_code == 200, r.text
+    assert db.query(Session).count() == 1
+
+
+def test_a_generated_card_is_marked_unverified(client, user):
+    """Generated content must never be presented as checked. The panel badges
+    this, and the badge is what makes the report link make sense."""
+    s = client.post(
+        "/sessions",
+        json={"slug": "another-unauthored-problem", "title": "1000. Another",
+              "difficulty": "Easy", "topics": ["array"]},
+        headers=_auth(user),
+    ).json()
+    card = client.get(f"/sessions/{s['session_id']}/card", headers=_auth(user)).json()
+    assert card["verified"] is False
+
+
+def test_an_authored_card_is_never_replaced_by_a_generated_one(client, user):
+    """Hand-written cards have been checked line by line; a generalisation must
+    not displace a specialist's version of a problem just because tags arrived."""
+    s = client.post(
+        "/sessions",
+        json={"slug": "two-sum", "title": "wrong title", "topics": ["tree", "graph"]},
+        headers=_auth(user),
+    ).json()
+    card = client.get(f"/sessions/{s['session_id']}/card", headers=_auth(user)).json()
+    assert card["verified"] is True
+    assert card["title"] != "wrong title"

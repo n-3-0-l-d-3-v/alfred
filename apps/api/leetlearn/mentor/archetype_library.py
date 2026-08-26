@@ -2202,3 +2202,99 @@ MATH_REASONING = register(Archetype(
         "Prove the relationship rather than inferring it from examples.",
     ),
 ))
+
+# --- the fallback ------------------------------------------------------------
+
+# Used when inference cannot name a pattern with enough confidence to teach one
+# (see infer.py). This is not a filler entry: it is the general problem-solving
+# method, which is what a good mentor falls back on when they do not recognise
+# the problem either. Its ladder asks the same four questions every pattern-
+# specific ladder asks, without presupposing an answer — restate the task, name
+# what determines the answer, find the repeated work, describe the shape.
+#
+# Serving this honestly beats serving a guessed pattern. A learner told "I don't
+# recognise this one, so let's reason it out" can weigh the advice; a learner
+# taught sliding-window on a problem that isn't one is being actively misled by
+# a tool that sounds certain.
+GENERAL_REASONING = register(Archetype(
+    key="general-reasoning",
+    name="General problem solving",
+    summary="Reason from the task itself when the pattern is not yet apparent.",
+    pattern_hint="No single pattern stands out yet — worth reasoning from first principles",
+    topics=(),
+    target_time="better than brute force",
+    target_space="O(n)",
+    brute_time="O(n^2) or worse",
+    ladder=LadderTemplate(
+        # Nouns arrive carrying their article ("the string"), so templates have
+        # to place {collection} where an article already reads correctly. "a
+        # rebuilt {collection}" rendered as "a rebuilt the string".
+        l1="Restate the task in your own words, without using any of the problem's "
+           "own phrasing. What exactly goes in, and what exactly comes out — a "
+           "count, a position, a yes or no, {collection} rebuilt? A surprising "
+           "number of wrong answers are correct reasoning aimed at the wrong "
+           "output shape.",
+        l2="Work the smallest interesting example by hand and watch yourself do it. "
+           "At each {unit}, what did you need to know to decide? That question is "
+           "the one the problem is really about, and naming it is most of the work.",
+        l3="Now do a bigger example and notice what you repeat. Which facts do you "
+           "recompute that you already established earlier? Nearly every "
+           "improvement in this kind of problem comes from carrying that fact "
+           "forward instead of deriving it again.",
+        l4="Try to describe your method as a single sweep through {collection} that "
+           "carries just enough information to answer at each step. If you cannot, "
+           "say precisely which piece forces you to look backwards — that piece is "
+           "the problem, and it is what the right structure has to make cheap.",
+    ),
+    approaches=(
+        ApproachTemplate(
+            name="Brute force",
+            idea="Do the direct thing over {collection}, however slow, and make it correct first.",
+            time="often O(n^2)", space="O(1)",
+        ),
+        ApproachTemplate(
+            name="Carry what you need",
+            idea="One sweep over {collection}, maintaining the fact that the brute-force "
+                 "version kept recomputing.",
+            time="often O(n)", space="O(n)",
+        ),
+    ),
+    pitfalls=(
+        {"mistake": "Optimising before it is correct",
+         "why": "a fast wrong answer gives you nothing to check the fast right one against",
+         "symptom": "a rewrite that passes fewer cases than the version it replaced"},
+        {"mistake": "Answering a nearby question",
+         "why": "returning the value when positions were asked for, or the count when "
+                "the items were, is a correct method aimed at the wrong output",
+         "symptom": "the logic looks right and the judge disagrees"},
+        {"mistake": "Reasoning only from the worked examples",
+         "why": "the examples are chosen to be readable, not to be adversarial",
+         "symptom": "passes the samples, fails on empty, single, or all-equal input"},
+    ),
+    failure_cases=(
+        {"mistake": "Assuming {collection} is non-empty",
+         "trigger": "an empty input",
+         "expected": "the stated result for nothing at all",
+         "actual": "an index error, or a wrong default",
+         "why": "The first read of {collection} usually happens before any check that "
+                "there is something to read."},
+        {"mistake": "Assuming every {unit} is distinct",
+         "trigger": "an input where one value repeats",
+         "expected": "the result accounting for both occurrences",
+         "actual": "one of them silently lost",
+         "why": "Anything keyed by value collapses duplicates. Whether that is a bug "
+                "depends on whether the problem cares which occurrence you found."},
+    ),
+    edge_cases=(
+        "An empty {collection}",
+        "A single {unit}",
+        "Every {unit} identical",
+        "The largest input the stated constraints allow",
+    ),
+    rewrite_challenges=(
+        "Write the brute force, then check the fast version against it on random inputs.",
+        "State the invariant your loop maintains, in one sentence, and check it holds "
+        "on entry and exit.",
+        "Argue what the lower bound is — does anything let you avoid reading all the input?",
+    ),
+))

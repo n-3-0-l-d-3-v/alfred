@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, ForeignKey, String
+from sqlalchemy import Date, DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -128,3 +128,41 @@ class Streak(Base):
     longest: Mapped[int] = mapped_column(default=0)
     last_active_date: Mapped[date | None] = mapped_column(Date, default=None)
     freezes_left: Mapped[int] = mapped_column(default=2)
+
+
+class ProblemMeta(Base):
+    """What a platform told us about a problem: title, difficulty, tags, statement.
+
+    Stored per problem rather than per session, because it is a property of the
+    problem and identical for every learner who opens it.
+
+    It exists so a card can be rebuilt after a restart. Cards for problems
+    nobody authored are generated from this metadata (see `mentor.synth`), and
+    the metadata itself is read by the extension from the page. Without a
+    durable copy, any request that isn't a fresh `POST /sessions` — a hint, a
+    review, a reload hours later — would have to regenerate the card from the
+    slug alone, silently dropping from the inferred pattern to the pattern-free
+    fallback. The learner would see the same problem taught two different ways
+    depending on how long the server had been up.
+    """
+
+    __tablename__ = "problem_meta"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    platform: Mapped[str] = mapped_column(String(32), default="leetcode", index=True)
+    slug: Mapped[str] = mapped_column(String(128), index=True)
+    title: Mapped[str | None] = mapped_column(String(256), default=None)
+    difficulty: Mapped[str | None] = mapped_column(String(16), default=None)
+    # Comma-separated: a handful of short slugs, only ever read as a whole, and
+    # a join table would buy nothing but a join.
+    topics: Mapped[str | None] = mapped_column(String(512), default=None)
+    # Truncated on write — inference reads keywords, and the tail of a long
+    # statement is examples and constraints rather than the task.
+    statement: Mapped[str | None] = mapped_column(Text, default=None)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    __table_args__ = (UniqueConstraint("platform", "slug", name="uq_problem_meta_platform_slug"),)
+
+    @property
+    def topic_list(self) -> list[str]:
+        return [t for t in (self.topics or "").split(",") if t]

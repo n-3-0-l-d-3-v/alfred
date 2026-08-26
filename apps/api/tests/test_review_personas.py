@@ -84,7 +84,7 @@ def test_method_named_set_is_not_mistaken_for_a_set():
 
 def test_review_has_all_four_lenses(db, user, service):
     s = _solved(db, user)
-    r = service.review(s, BRUTE_FORCE)
+    r = service.review(db, s, BRUTE_FORCE)
     assert {sec.lens for sec in r.sections} == {"correctness", "complexity", "robustness", "alternatives"}
 
 
@@ -92,13 +92,13 @@ def test_review_always_says_what_went_well(db, user, service):
     """A pure fault list teaches badly — there must always be positive signal."""
     s = _solved(db, user)
     for code in (BRUTE_FORCE, OPTIMAL, "!!! not parseable !!!"):
-        assert service.review(s, code).what_you_did_well
+        assert service.review(db, s, code).what_you_did_well
 
 
 def test_failure_gallery_is_concrete(db, user, service):
     """'What happens if you do it wrong' must show a real input and real output."""
     s = _solved(db, user)
-    gallery = service.review(s, OPTIMAL).failure_gallery
+    gallery = service.review(db, s, OPTIMAL).failure_gallery
     assert len(gallery) >= 3
     for case in gallery:
         assert case.trigger and case.expected and case.actual and case.why
@@ -107,20 +107,20 @@ def test_failure_gallery_is_concrete(db, user, service):
 
 def test_alternatives_lens_lists_every_approach(db, user, service):
     s = _solved(db, user)
-    alts = next(sec for sec in service.review(s, OPTIMAL).sections if sec.lens == "alternatives")
+    alts = next(sec for sec in service.review(db, s, OPTIMAL).sections if sec.lens == "alternatives")
     assert len(alts.findings) == 3  # brute force, hash map, sort+two-pointers
 
 
 def test_optimal_solution_recognized(db, user, service):
     s = _solved(db, user)
-    r = service.review(s, OPTIMAL)
+    r = service.review(db, s, OPTIMAL)
     assert r.verdict == "optimal"
     assert r.complexity_time == "O(n)"
 
 
 def test_unparseable_code_degrades_gracefully(db, user, service):
     s = _solved(db, user)
-    r = service.review(s, "this is not code at all {{{")
+    r = service.review(db, s, "this is not code at all {{{")
     assert r.verdict == "unknown"
     assert r.failure_gallery  # card content still teaches
 
@@ -130,7 +130,7 @@ def test_unparseable_code_degrades_gracefully(db, user, service):
 
 def test_every_persona_produces_a_distinct_headline(db, user, service):
     s = _solved(db, user)
-    headlines = {p: service.review(s, BRUTE_FORCE, persona=p).headline for p in personas.ALL}
+    headlines = {p: service.review(db, s, BRUTE_FORCE, persona=p).headline for p in personas.ALL}
     assert len(set(headlines.values())) == len(personas.ALL)
 
 
@@ -144,17 +144,17 @@ def test_personas_share_identical_findings(db, user, service):
     content of any given lens.
     """
     s = _solved(db, user)
-    baseline = {sec.lens: sec.findings for sec in service.review(s, BRUTE_FORCE, persona="mentor").sections}
+    baseline = {sec.lens: sec.findings for sec in service.review(db, s, BRUTE_FORCE, persona="mentor").sections}
     for p in personas.ALL:
-        got = {sec.lens: sec.findings for sec in service.review(s, BRUTE_FORCE, persona=p).sections}
+        got = {sec.lens: sec.findings for sec in service.review(db, s, BRUTE_FORCE, persona=p).sections}
         assert got == baseline, f"persona {p} changed the findings, not just the voice"
 
 
 def test_personas_reorder_and_retitle_sections(db, user, service):
     """The reordering has to be real, or the persona feature is decorative."""
     s = _solved(db, user)
-    mentor = service.review(s, BRUTE_FORCE, persona="mentor")
-    interviewer = service.review(s, BRUTE_FORCE, persona="interviewer")
+    mentor = service.review(db, s, BRUTE_FORCE, persona="mentor")
+    interviewer = service.review(db, s, BRUTE_FORCE, persona="interviewer")
 
     assert [x.lens for x in mentor.sections] != [x.lens for x in interviewer.sections]
     # An interviewer opens on what you cannot yet defend, not on running time.
@@ -165,17 +165,17 @@ def test_personas_reorder_and_retitle_sections(db, user, service):
 def test_every_persona_signs_off(db, user, service):
     s = _solved(db, user)
     for p in personas.ALL:
-        assert service.review(s, BRUTE_FORCE, persona=p).closer, f"{p} has no closing line"
+        assert service.review(db, s, BRUTE_FORCE, persona=p).closer, f"{p} has no closing line"
 
 
 def test_interviewer_persona_asks_questions(db, user, service):
     s = _solved(db, user)
-    assert "?" in service.review(s, BRUTE_FORCE, persona="interviewer").headline
+    assert "?" in service.review(db, s, BRUTE_FORCE, persona="interviewer").headline
 
 
 def test_unknown_persona_falls_back_to_mentor(db, user, service):
     s = _solved(db, user)
-    assert service.review(s, OPTIMAL, persona="nonsense").persona == "mentor"
+    assert service.review(db, s, OPTIMAL, persona="nonsense").persona == "mentor"
 
 
 # --- reactions ------------------------------------------------------------------
@@ -212,7 +212,7 @@ def test_unknown_reaction_situation_returns_none():
 
 def test_review_attaches_a_reaction(db, user, service):
     s = _solved(db, user)
-    reaction = service.review(s, BRUTE_FORCE).reaction
+    reaction = service.review(db, s, BRUTE_FORCE).reaction
     assert reaction is not None
     # The stamp is the chip; the line is where the writing lives. An emoji-only
     # reaction is exactly what this replaced, so both have to be present.

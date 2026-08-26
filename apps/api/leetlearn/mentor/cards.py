@@ -82,6 +82,9 @@ class CardStore:
 
     def __init__(self) -> None:
         self._cards: dict[str, ProblemCard] = {}
+        # Tracked separately from `verified`: a hand-written card can also be
+        # unverified, and only these are safe to discard and rebuild.
+        self._synthesized: set[str] = set()
 
     def load_dir(self, directory: Path | None = None) -> "CardStore":
         """Load hand-written JSON cards, then the archetype-built ones.
@@ -112,6 +115,40 @@ class CardStore:
 
     def get(self, slug: str) -> ProblemCard | None:
         return self._cards.get(slug)
+
+    def get_or_synthesize(
+        self,
+        slug: str,
+        title: str | None = None,
+        difficulty: str | None = None,
+        topics=None,
+        statement: str | None = None,
+    ) -> ProblemCard:
+        """A card for `slug`, generating one from its archetype if none exists.
+
+        This is what makes the product work on a problem nobody authored. An
+        authored card always wins — those have been checked line by line, and a
+        generalisation should never displace a specialist's version.
+
+        Synthesized cards are memoised under their slug, so the second learner to
+        open a problem gets the same plain dictionary read as a curated one. The
+        cache is keyed only by slug because the inputs behind it (a problem's
+        tags and statement) do not change; the one thing that would justify
+        rebuilding is a better archetype library, and that ships as a restart.
+        """
+        card = self._cards.get(slug)
+        if card is not None:
+            return card
+
+        from .synth import synthesize
+
+        card, _ = synthesize(slug, title, difficulty, topics, statement)
+        self._cards[slug] = card
+        self._synthesized.add(slug)
+        return card
+
+    def is_synthesized(self, slug: str) -> bool:
+        return slug in self._synthesized
 
     def slugs(self) -> list[str]:
         return sorted(self._cards)

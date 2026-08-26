@@ -147,7 +147,7 @@ def test_offline_review_reads_signals(db, user, service):
     progress.on_verdict(db, user, s, "Accepted")
     # A brute-force O(n^2) solution to an O(n)-target problem should be flagged.
     code = "for i in range(len(nums)):\n    for j in range(i+1, len(nums)):\n        if nums[i]+nums[j]==target:\n            return [i,j]"
-    r = service.review(s, code)
+    r = service.review(db, s, code)
     assert r.complexity_time == "O(n^2)"
     assert r.target_time == "O(n)"
     assert r.verdict == "works — can be sharper"

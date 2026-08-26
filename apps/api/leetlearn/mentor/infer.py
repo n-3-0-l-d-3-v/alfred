@@ -166,8 +166,22 @@ def _tag_weights() -> dict[str, float]:
     return {tag: math.log(1 + total / n) for tag, n in counts.items()}
 
 
+# Tags that describe *how a solution happens to be written* rather than what
+# kind of problem it is. Inverse frequency rewards them for being rare across
+# the library, but rarity is the wrong measure for these: LeetCode tags Add Two
+# Numbers "recursion", which is true of an implementation and says nothing about
+# the problem — enough, before this, to float Backtracking to second place on a
+# linked-list traversal.
+WEAK_TAGS = {"recursion", "simulation"}
+WEAK_TAG_FACTOR = 0.3
+
 _TAG_WEIGHT = _tag_weights()
 _PHRASE_RE = _compile_phrases()
+
+
+def _tag_weight(tag: str) -> float:
+    w = _TAG_WEIGHT.get(tag, 1.0)
+    return w * WEAK_TAG_FACTOR if tag in WEAK_TAGS else w
 
 # Tags LeetCode uses that name a pattern we model under a different key.
 TAG_ALIASES = {
@@ -250,7 +264,7 @@ def infer(
         why: list[str] = []
 
         for tag in tags & set(arch.topics):
-            w = _TAG_WEIGHT.get(tag, 1.0)
+            w = _tag_weight(tag)
             score += w
             if w >= 2.0:
                 why.append(f"tagged {tag}")
@@ -298,7 +312,10 @@ def infer(
     return Inference(
         archetype=best_key,
         confidence=round(confidence, 3),
-        runners_up=tuple((k, round(s, 2)) for k, s, _ in scored[1:4]),
+        # Scored relative to the winner, not absolutely: the only question a
+        # caller asks of a runner-up is "was this nearly as good?", and a raw
+        # score cannot answer that without also knowing the winner's.
+        runners_up=tuple((k, round(s / best_score, 2)) for k, s, _ in scored[1:4]),
         evidence=tuple(best_why),
         nouns=_nouns(text, tags),
     )

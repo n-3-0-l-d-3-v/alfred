@@ -15,6 +15,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session as DbSession
 
 from ..analysis import CodeSignals, analyze
+from .. import problem_meta
 from ..gamification import budget
 from ..models import HintEvent, Session, User
 from . import personalize, probes
@@ -33,7 +34,14 @@ class BudgetError(Exception):
 
 
 class CardMissingError(Exception):
-    """No Problem Card exists for this slug yet."""
+    """No Problem Card exists for this slug and none could be generated.
+
+    Retained for the endpoint layer, but no longer reachable in normal use:
+    `_require_card` generates a card from the problem's archetype when none was
+    authored. It survives as the honest failure for a card that cannot even be
+    built — a corrupt archetype library, say — rather than being deleted and
+    turning that into an opaque 500.
+    """
 
 
 # Levels 1-4 are the code-free ladder. 5 == full solution (post-AC only).
@@ -45,11 +53,22 @@ class HintService:
         self._cards = cards
         self._mentor = mentor
 
-    def _require_card(self, slug: str) -> ProblemCard:
-        card = self._cards.get(slug)
-        if card is None:
-            raise CardMissingError(slug)
-        return card
+    def _require_card(self, db: DbSession, session: Session) -> ProblemCard:
+        """The card for this session's problem, generating one if need be.
+
+        Every feature routes through here, so generation happening at this level
+        rather than at session start is what makes the whole surface — hints,
+        review, interview, the post-AC payload — work on an unauthored problem
+        instead of just the first of them.
+        """
+        card = self._cards.get(session.slug)
+        if card is not None:
+            return card
+        try:
+            meta = problem_meta.lookup(db, session.platform, session.slug)
+            return self._cards.get_or_synthesize(session.slug, **problem_meta.as_kwargs(meta))
+        except Exception as exc:  # pragma: no cover — archetype library is tested
+            raise CardMissingError(session.slug) from exc
 
     # --- hints ---------------------------------------------------------------
 
@@ -62,7 +81,7 @@ class HintService:
         code: str | None = None,
         personalized: bool = False,
     ) -> PreACHint:
-        card = self._require_card(session.slug)
+        card = self._require_card(db, session)
 
         # --- the gate ---
         if level >= FULL_SOLUTION_LEVEL and not session.solved:
@@ -128,10 +147,10 @@ class HintService:
 
     # --- post-AC payload -----------------------------------------------------
 
-    def post_ac_payload(self, session: Session) -> PostACPayload:
+    def post_ac_payload(self, db: DbSession, session: Session) -> PostACPayload:
         if not session.solved:
             raise HintGateError("Post-AC content unlocks after a passing submission.")
-        card = self._require_card(session.slug)
+        card = self._require_card(db, session)
         return PostACPayload(
             slug=card.slug,
             approaches=[ApproachOut(**a.model_dump()) for a in card.approaches],
@@ -145,6 +164,7 @@ class HintService:
 
     def review(
         self,
+        db: DbSession,
         session: Session,
         code: str,
         persona: str = "mentor",
@@ -153,7 +173,7 @@ class HintService:
         """Multi-lens review. Free and unlimited — it never calls the model."""
         if not session.solved:
             raise HintGateError("Reviews unlock after a passing submission.")
-        card = self._require_card(session.slug)
+        card = self._require_card(db, session)
         signals = analyze(session.language, code)
         return build_review(
             card,
@@ -165,7 +185,7 @@ class HintService:
 
     # --- interview -----------------------------------------------------------
 
-    def interview(self, session: Session, code: str, limit: int = 4) -> list[dict]:
+    def interview(self, db: DbSession, session: Session, code: str, limit: int = 4) -> list[dict]:
         """Questions about this submission, without their answers.
 
         Answers are withheld until the learner commits to their own — see
@@ -177,18 +197,18 @@ class HintService:
                 "Interview mode opens after you pass. Defending a solution you "
                 "haven't got yet is just a harder way to ask for a hint."
             )
-        card = self._require_card(session.slug)
+        card = self._require_card(db, session)
         signals = analyze(session.language, code)
         return [
             {"key": p.key, "question": p.question}
             for p in probes.generate(card, signals, limit=limit)
         ]
 
-    def interview_answers(self, session: Session, code: str, limit: int = 4) -> list[dict]:
+    def interview_answers(self, db: DbSession, session: Session, code: str, limit: int = 4) -> list[dict]:
         """The model answers, revealed after the learner has committed to theirs."""
         if not session.solved:
             raise HintGateError("Interview mode opens after a passing submission.")
-        card = self._require_card(session.slug)
+        card = self._require_card(db, session)
         signals = analyze(session.language, code)
         return [
             {

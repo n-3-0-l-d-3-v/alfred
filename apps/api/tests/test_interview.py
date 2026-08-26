@@ -110,9 +110,9 @@ def test_interview_is_locked_before_a_passing_submission(db, user, service):
     db.add(unsolved)
     db.commit()
     with pytest.raises(HintGateError):
-        service.interview(unsolved, HASH_MAP)
+        service.interview(db, unsolved, HASH_MAP)
     with pytest.raises(HintGateError):
-        service.interview_answers(unsolved, HASH_MAP)
+        service.interview_answers(db, unsolved, HASH_MAP)
 
 
 def test_questions_do_not_leak_their_answers(db, user, service):
@@ -122,7 +122,7 @@ def test_questions_do_not_leak_their_answers(db, user, service):
     the only part of this exercise that does anything.
     """
     s = _solved(db, user)
-    questions = service.interview(s, HASH_MAP)
+    questions = service.interview(db, s, HASH_MAP)
     assert questions
     for q in questions:
         assert set(q) == {"key", "question"}
@@ -130,8 +130,8 @@ def test_questions_do_not_leak_their_answers(db, user, service):
 
 def test_answers_are_available_on_the_second_call(db, user, service):
     s = _solved(db, user)
-    questions = service.interview(s, HASH_MAP)
-    answers = service.interview_answers(s, HASH_MAP)
+    questions = service.interview(db, s, HASH_MAP)
+    answers = service.interview_answers(db, s, HASH_MAP)
 
     assert [q["key"] for q in questions] == [a["key"] for a in answers]
     for a in answers:
