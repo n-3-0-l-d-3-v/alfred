@@ -91,8 +91,25 @@ LL.api = (function () {
     },
     logout: () => LL.storage.set({ token: null }),
     isSignedIn: async () => !!(await token()),
-    startSession: (slug, language, platform = "leetcode") =>
-      call("/sessions", { method: "POST", body: { slug, language, platform } }),
+    /**
+     * Open a session. `meta` (title/difficulty/topics/statement) is what lets
+     * the server build a card for a problem nobody has authored one for, so it
+     * is sent on every start rather than only when the client suspects a miss —
+     * the client has no way to know what the knowledge base covers.
+     */
+    startSession: (slug, language, platform = "leetcode", meta = {}) =>
+      call("/sessions", {
+        method: "POST",
+        body: {
+          slug,
+          language,
+          platform,
+          title: meta.title ?? null,
+          difficulty: meta.difficulty ?? null,
+          topics: meta.topics ?? [],
+          statement: meta.statement ?? null,
+        },
+      }),
     hint: (sid, level, code, personalized = false) =>
       call(`/sessions/${sid}/hint`, { method: "POST", body: { level, code, personalized } }),
     verdict: (sid, verdict) => call(`/sessions/${sid}/verdict`, { method: "POST", body: { verdict } }),

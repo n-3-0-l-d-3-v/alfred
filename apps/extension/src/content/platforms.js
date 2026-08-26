@@ -13,7 +13,12 @@
  *     readProblem() { id, title } or null
  *     readCode()    { code, complete, language, strategy }
  *     readVerdict() a verdict string, or null
+ *     readMeta()    optional; { title, difficulty, topics, statement, strategy }
  *   }
+ *
+ * `readMeta` is what lets the backend teach a problem nobody wrote a card for:
+ * the topic tags and statement are what an algorithmic archetype is inferred
+ * from. It is optional because a site may have nothing to read.
  *
  * Adding a site is one file implementing that, not a fork of the product.
  *
@@ -68,13 +73,25 @@ LL.platforms = {
     const problem = adapter.readProblem();
     if (!problem?.id) return { ok: false, reason: "not a problem page", platform: adapter.id };
 
-    const code = await adapter.readCode();
+    // `readMeta` is optional: an adapter for a site with no problem statement
+    // to read simply omits it, and the backend falls back to teaching from the
+    // learner's code alone.
+    const [code, meta] = await Promise.all([
+      adapter.readCode(),
+      adapter.readMeta ? adapter.readMeta().catch(() => null) : null,
+    ]);
     return {
       ok: true,
       platform: adapter.id,
       platformLabel: adapter.label,
       slug: problem.id,
-      title: problem.title ?? null,
+      title: meta?.title ?? problem.title ?? null,
+      // Everything the backend needs to teach a problem no card was authored
+      // for: the archetype is inferred from these.
+      difficulty: meta?.difficulty ?? null,
+      topics: meta?.topics ?? [],
+      statement: meta?.statement ?? null,
+      metaStrategy: meta?.strategy ?? null,
       language: code.language ?? null,
       languageStrategy: code.languageStrategy ?? null,
       code: code.code ?? null,

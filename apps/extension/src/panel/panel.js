@@ -114,7 +114,12 @@
       // Defaulting here rather than in the adapter keeps the guess visible and
       // in one place — silently inventing one is what previously sent
       // "Choose a type" to the API and took static analysis down with it.
-      const s = await LL.api.startSession(ctx.slug, ctx.language ?? "python", ctx.platform ?? "leetcode");
+      const s = await LL.api.startSession(
+        ctx.slug,
+        ctx.language ?? "python",
+        ctx.platform ?? "leetcode",
+        ctx
+      );
       state.sessionId = s.session_id;
       state.solved = s.solved;
       await Promise.all([loadCard(), loadProgress(), loadPersonas()]);

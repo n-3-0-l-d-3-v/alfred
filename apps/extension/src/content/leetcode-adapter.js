@@ -203,6 +203,102 @@ async function readCode() {
   return { code: null, complete: false, language: null, strategy: null };
 }
 
+// --- problem metadata --------------------------------------------------------
+
+/**
+ * Title, difficulty, topic tags and the statement text.
+ *
+ * The backend needs these to teach a problem nobody has authored a card for:
+ * they are what an archetype is inferred from. Read via LeetCode's own GraphQL
+ * endpoint rather than the DOM, for the reason at the top of this file —
+ * markup is reskinned, the query behind the page's own data is not. The content
+ * script is same-origin with leetcode.com, so this needs no host permission and
+ * sends no cookies anywhere else.
+ *
+ * Topic tags are the single most useful signal here and are the one thing the
+ * DOM genuinely cannot supply: the page keeps them collapsed behind a Topics
+ * toggle and does not render them until clicked.
+ */
+const META_QUERY = `query q($titleSlug: String!) {
+  question(titleSlug: $titleSlug) {
+    questionFrontendId title difficulty content
+    topicTags { slug }
+  }
+}`;
+
+let metaCache = { slug: null, value: null };
+
+async function readMeta(slug = readSlug(), timeoutMs = 2500) {
+  if (!slug) return null;
+  // Metadata for a problem does not change while the tab is open, and the
+  // panel re-reads context on every hint and review.
+  if (metaCache.slug === slug && metaCache.value) return metaCache.value;
+
+  let meta = null;
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeoutMs);
+    const res = await fetch("/graphql", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ query: META_QUERY, variables: { titleSlug: slug } }),
+      credentials: "omit",
+      signal: ctl.signal,
+    });
+    clearTimeout(timer);
+    const q = (await res.json())?.data?.question;
+    if (q) {
+      meta = {
+        title: q.questionFrontendId ? `${q.questionFrontendId}. ${q.title}` : q.title,
+        difficulty: q.difficulty ?? null,
+        topics: (q.topicTags ?? []).map((t) => t.slug),
+        // Tags and prose only. The statement is HTML; the backend matches
+        // keywords against it, so markup would just be noise in the signal.
+        statement: stripHtml(q.content ?? ""),
+        strategy: "graphql",
+      };
+    }
+  } catch (_) {
+    /* offline, aborted, or the query shape moved — fall through to the DOM */
+  }
+
+  if (!meta) meta = readMetaFromDom();
+  if (meta) metaCache = { slug, value: meta };
+  return meta;
+}
+
+function stripHtml(html) {
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return (doc.body.textContent ?? "").replace(/\s+/g, " ").trim();
+  } catch (_) {
+    return "";
+  }
+}
+
+/** Fallback metadata scrape. Coarser than GraphQL and cannot see topic tags. */
+function readMetaFromDom() {
+  const title =
+    document.querySelector("div.text-title-large a, a[href^='/problems/'] .text-title-large")
+      ?.textContent?.trim() || null;
+
+  let difficulty = null;
+  for (const el of document.querySelectorAll("div,span")) {
+    const t = el.textContent?.trim();
+    if (t && /^(Easy|Medium|Hard)$/.test(t)) {
+      difficulty = t;
+      break;
+    }
+  }
+
+  const statement = stripHtml(
+    document.querySelector("[data-track-load='description_content']")?.innerHTML ?? ""
+  );
+
+  if (!title && !difficulty && !statement) return null;
+  return { title, difficulty, topics: [], statement, strategy: "dom" };
+}
+
 /** Read a submission verdict, if one is on screen. */
 function readVerdict() {
   const { el } = firstMatch(SELECTORS.resultArea);
@@ -222,13 +318,23 @@ async function readContext() {
   const slug = readSlug();
   if (!slug) return { ok: false, reason: "not a problem page" };
 
-  const { code, complete, language: modelLanguage, strategy } = await readCode();
+  // Both are network/DOM-bound and independent; serialising them added most of
+  // a second to every hint press, since the panel re-reads context each time.
+  const [{ code, complete, language: modelLanguage, strategy }, meta] = await Promise.all([
+    readCode(),
+    readMeta(slug),
+  ]);
   const fromDom = modelLanguage ? null : readLanguageFromDom();
   const language = modelLanguage ?? fromDom?.language ?? null;
 
   return {
     ok: true,
     slug,
+    title: meta?.title ?? null,
+    difficulty: meta?.difficulty ?? null,
+    topics: meta?.topics ?? [],
+    statement: meta?.statement ?? null,
+    metaStrategy: meta?.strategy ?? null,
     // Null rather than a guess. The panel decides how to handle not knowing;
     // inventing a language is what broke the review pipeline before.
     language,
@@ -253,6 +359,9 @@ async function selfTest() {
       : "FAIL",
     bridge: bridgeReady ? "installed" : "NOT INSTALLED",
     verdict: ctx.verdict ?? "none on screen",
+    meta: ctx.metaStrategy
+      ? `OK via ${ctx.metaStrategy} (${ctx.difficulty ?? "?"}, ${ctx.topics.length} tags)`
+      : "FAIL",
   };
   console.table(report);
   return report;
@@ -265,6 +374,8 @@ LL.adapter = {
   readSlug,
   readLanguageFromDom,
   readCode,
+  readMeta,
+  readMetaFromDom,
   readVerdict,
   readContext,
   normalizeLanguage,
@@ -285,10 +396,14 @@ if (LL.platforms) {
     id: "leetcode",
     label: "LeetCode",
     matches: (url) => /(^|\/\/)([a-z]+\.)?leetcode\.com\/problems\//i.test(url),
+    // Stays synchronous: content.js reads the slug from this on every mutation
+    // and every navigation tick, where a promise would be pure overhead. The
+    // metadata that does need a round trip is a separate, optional method.
     readProblem: () => {
       const id = readSlug();
       return id ? { id, title: null } : null;
     },
+    readMeta: () => readMeta(),
     readCode: async () => {
       const r = await readCode();
       // Monaco reports the language alongside the buffer; the DOM path can't,
