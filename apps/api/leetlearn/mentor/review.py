@@ -7,6 +7,8 @@ lets reviews stay unlimited even on the free tier.
 
 from __future__ import annotations
 
+import re
+
 from ..analysis import CodeSignals
 from . import personas, reactions
 from .cards import ProblemCard
@@ -17,13 +19,43 @@ def _norm(c: str) -> str:
     return c.replace(" ", "").replace("_", "").lower()
 
 
+# A target is only usable as a benchmark if it is an actual complexity. Cards
+# generated for unauthored problems carry prose instead ("better than brute
+# force"), because no honest asymptotic claim can be made about a problem nobody
+# has worked. Comparing against prose silently made every such review read
+# "suboptimal" — telling a learner with an optimal O(n) solution it "can be
+# sharper", which is worse than saying nothing.
+_COMPLEXITY = re.compile(r"^o\(.+\)$", re.I)
+
+
+def _is_benchmark(target: str) -> bool:
+    return bool(_COMPLEXITY.match(target.strip()))
+
+
 def _complexity_lens(signals: CodeSignals, est: str, target: str) -> ReviewSection:
     findings: list[str] = []
     if not signals.parsed:
         findings.append(f"Couldn't parse the source ({signals.error}), so this is card-based only.")
         return ReviewSection(lens="complexity", title="Time & space", findings=findings)
 
-    if _norm(est) == _norm(target):
+    if not _is_benchmark(target):
+        findings.append(
+            f"Estimated {est}. There's no verified target complexity for this problem "
+            "on file, so treat that as a reading of your code rather than a grade "
+            "against a known best."
+        )
+        if signals.max_loop_depth >= 2:
+            findings.append(
+                f"The {signals.max_loop_depth} nested loops are where the time goes. "
+                "Whether that's avoidable here is the question worth asking — work out "
+                "what the inner loop re-derives that the outer one already knew."
+            )
+        if signals.has_recursion and not signals.has_memoization:
+            findings.append(
+                "Unmemoized recursion recomputes identical subproblems. If the same "
+                "arguments can recur, the call tree branches instead of collapsing."
+            )
+    elif _norm(est) == _norm(target):
         findings.append(f"Estimated {est}, which matches the target — no wasted asymptotic work.")
     else:
         findings.append(f"Estimated {est}; the target for this problem is {target}.")
@@ -71,7 +103,7 @@ def _correctness_lens(card: ProblemCard, signals: CodeSignals) -> ReviewSection:
 def _robustness_lens(signals: CodeSignals, target: str) -> ReviewSection:
     findings = []
     if signals.parsed:
-        if signals.max_loop_depth >= 2 and _norm(target) in {"o(n)", "o(nlogn)"}:
+        if signals.max_loop_depth >= 2 and _is_benchmark(target) and _norm(target) in {"o(n)", "o(nlogn)"}:
             findings.append(
                 "At n = 10⁵ this would do ~10¹⁰ operations — a guaranteed TLE. It passed because "
                 "these constraints are small, not because the approach scales."
@@ -179,11 +211,18 @@ def build_review(
     p = personas.get(persona_key)
     target = str(card.complexity.get("target_time", "O(n)"))
     est = signals.estimated_time_complexity()
-    optimal = signals.parsed and _norm(est) == _norm(target)
+    benchmarked = _is_benchmark(target)
+    optimal = signals.parsed and benchmarked and _norm(est) == _norm(target)
+    # Distinct from `not optimal`: "we know it is slower" and "we have nothing to
+    # compare it to" are different claims, and collapsing them is what made the
+    # review confidently wrong on every generated card.
+    ungraded = signals.parsed and not benchmarked
 
     # --- headline in the persona's voice ---
     if not signals.parsed:
         headline = p.unparsed
+    elif ungraded:
+        headline = p.untargeted.format(est=est, target=target)
     elif optimal:
         headline = p.optimal.format(est=est, target=target)
     else:
@@ -194,7 +233,7 @@ def build_review(
         situation = "unparseable"
     elif signals.has_recursion and not signals.has_memoization:
         situation = "recursion_no_memo"
-    elif signals.max_loop_depth >= 2 and not optimal:
+    elif signals.max_loop_depth >= 2 and not optimal and not ungraded:
         situation = "brute_force_accepted" if hints_used == 0 else "nested_loop_when_hashmap_exists"
     elif optimal and hints_used == 0:
         situation = "no_hints_solve"
@@ -211,6 +250,8 @@ def build_review(
     well: list[str] = []
     if optimal:
         well.append(f"Reached the optimal {est} complexity.")
+    elif ungraded and signals.max_loop_depth <= 1 and not signals.has_recursion:
+        well.append(f"A single pass at {est} — no nested rescanning of the same data.")
     # Only *deliberate* structures earn praise. A bare list/tuple literal shows up
     # in almost every solution (`return [i, j]`) and says nothing about intent —
     # praising it on brute-force code reads as hollow.
@@ -228,7 +269,14 @@ def build_review(
         persona=p.key,
         persona_label=p.label,
         headline=headline,
-        verdict="optimal" if optimal else ("unknown" if not signals.parsed else "works — can be sharper"),
+        verdict=(
+            "unknown" if not signals.parsed
+            else "optimal" if optimal
+            # Not "can be sharper": we do not know that, and saying it anyway is
+            # the exact overclaim this distinction exists to prevent.
+            else "works — no target on file" if ungraded
+            else "works — can be sharper"
+        ),
         complexity_time=est,
         complexity_space="(space estimate needs data-flow analysis — Phase 1.5)",
         target_time=target,

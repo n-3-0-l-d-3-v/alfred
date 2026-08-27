@@ -7,7 +7,7 @@ from leetlearn.analysis import analyze
 from leetlearn.analysis.registry import supported_languages
 from leetlearn.mentor import personas, reactions
 from leetlearn.gamification import progress
-from leetlearn.models import Session
+from leetlearn.models import Session, utcnow
 
 
 def _solved(db, user, slug="two-sum", hints=0):
@@ -218,3 +218,70 @@ def test_review_attaches_a_reaction(db, user, service):
     # reaction is exactly what this replaced, so both have to be present.
     assert reaction["stamp"] and reaction["line"]
     assert reaction["tone"] in {"good", "warn", "bad"}
+
+
+# --- reviews without a verified target ---------------------------------------
+
+# Cards generated for unauthored problems carry prose where a target complexity
+# would be ("better than brute force"), because no honest asymptotic claim can be
+# made about a problem nobody has worked. The review used to compare against it
+# as though it were a complexity, so every such review said "works — can be
+# sharper", including on optimal code.
+
+UNGRADED_SLUG = "some-unauthored-problem"
+
+
+def _ungraded_session(db, user):
+    from leetlearn.mentor.cards import CardStore
+    s = Session(user_id=user.id, slug=UNGRADED_SLUG, language="python", hints_used=0)
+    s.solved_at = utcnow()
+    db.add(s)
+    db.commit()
+    return s
+
+
+def test_no_target_does_not_become_a_suboptimal_verdict(db, user, cards, service):
+    """The bug this exists for: an optimal single-pass solution being told it
+    could be sharper, on the authority of a target we never had."""
+    cards.get_or_synthesize(UNGRADED_SLUG, title="999. Unknown", topics=[])
+    s = _ungraded_session(db, user)
+    r = service.review(db, s, OPTIMAL)
+    assert r.verdict == "works — no target on file"
+    assert "sharper" not in r.verdict
+
+
+def test_no_target_says_so_rather_than_naming_a_fake_one(db, user, cards, service):
+    cards.get_or_synthesize(UNGRADED_SLUG, title="999. Unknown", topics=[])
+    s = _ungraded_session(db, user)
+    r = service.review(db, s, OPTIMAL)
+    assert "no verified target" in " ".join(
+        f for sec in r.sections if sec.lens == "complexity" for f in sec.findings
+    )
+
+
+def test_no_target_never_claims_a_guaranteed_tle(db, user, cards, service):
+    """The TLE warning is a concrete numeric claim. It is only true relative to a
+    known target, so without one it must not fire."""
+    cards.get_or_synthesize(UNGRADED_SLUG, title="999. Unknown", topics=[])
+    s = _ungraded_session(db, user)
+    r = service.review(db, s, BRUTE_FORCE)
+    robustness = " ".join(
+        f for sec in r.sections if sec.lens == "robustness" for f in sec.findings
+    )
+    assert "guaranteed TLE" not in robustness
+
+
+@pytest.mark.parametrize("persona", personas.ALL)
+def test_every_persona_has_something_to_say_without_a_target(db, user, cards, service, persona):
+    cards.get_or_synthesize(UNGRADED_SLUG, title="999. Unknown", topics=[])
+    s = _ungraded_session(db, user)
+    r = service.review(db, s, OPTIMAL, persona=persona)
+    assert r.headline.strip()
+    assert "{est}" not in r.headline and "{target}" not in r.headline
+
+
+def test_an_authored_card_still_grades_normally(db, user, service):
+    """The new branch must not swallow the case it was carved out of."""
+    s = _solved(db, user)
+    assert service.review(db, s, OPTIMAL).verdict == "optimal"
+    assert service.review(db, s, BRUTE_FORCE).verdict == "works — can be sharper"

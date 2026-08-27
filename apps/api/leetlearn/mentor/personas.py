@@ -64,6 +64,11 @@ class Persona:
     # A closing line, so the review ends in the persona's voice rather than
     # trailing off after the last bullet.
     closer: str = ""
+    # Said when we have no verified target complexity to compare against — a
+    # generated card for a problem nobody authored. Without this the review
+    # falls back to `suboptimal` and tells a learner with an optimal solution
+    # that it "can be sharper", which is worse than saying nothing at all.
+    untargeted: str = ""
 
 
 _PERSONAS: dict[str, Persona] = {
@@ -72,6 +77,7 @@ _PERSONAS: dict[str, Persona] = {
         label="Mentor",
         blurb="Warm and explanatory. Tells you why, not just what.",
         optimal="This hits the target complexity ({est}). Here's why that matters and what to notice.",
+        untargeted="This runs at {est}. I don't have a verified target for this problem, so I won't pretend to grade it — here's what I can see in the code itself.",
         suboptimal="This works at {est}, and the target is {target}. That gap is the lesson — let's look at it.",
         unparsed="I couldn't parse this, so I'll stick to what the problem itself teaches.",
         failure_intro="Here's what would go wrong if you'd made one of the common mistakes:",
@@ -86,6 +92,7 @@ _PERSONAS: dict[str, Persona] = {
         label="Roast",
         blurb="Funny, meme-forward, and never wrong about the technical bits.",
         optimal="{est}. Target was {target}. Nothing to make fun of. Disappointing.",
+        untargeted="{est}. I have no target on file for this one, so you get away with it this time.",
         suboptimal="{est} where {target} was on offer. Let's talk about it.",
         unparsed="Couldn't parse it. I'll assume that's the parser's fault and not yours.",
         failure_intro="Ways this could have gone badly (some of them nearly did):",
@@ -105,6 +112,7 @@ _PERSONAS: dict[str, Persona] = {
         label="Interviewer",
         blurb="Answers in questions. Makes you defend every choice.",
         optimal="You landed on {est}. Convince me it's optimal — what's the lower bound, and why?",
+        untargeted="You're at {est}. I haven't been told what optimal is here — so you tell me: what is the lower bound, and does your solution meet it?",
         suboptimal="You're at {est}; I'd expect {target}. Where is the wasted work, and what would you change first?",
         unparsed="I can't read this. Walk me through your approach out loud instead.",
         failure_intro="I'd probe these next — how does your code handle each?",
@@ -125,6 +133,7 @@ _PERSONAS: dict[str, Persona] = {
         label="Pragmatist",
         blurb="Ship-it lens. Is this good enough, and when would it stop being?",
         optimal="{est} — optimal and readable. Ship it.",
+        untargeted="{est}. No target on file, so judge it on whether it reads clearly and holds at your real input sizes.",
         suboptimal="{est} vs a {target} target. Fine for small inputs; here's the scale where it stops being fine.",
         unparsed="Can't parse it, so I can't judge it. If it passes and reads clearly, that's usually enough.",
         failure_intro="Realistic failure modes, ranked by how likely they are to bite in production:",
@@ -144,6 +153,7 @@ _PERSONAS: dict[str, Persona] = {
         label="Professor",
         blurb="Formal. Invariants, correctness arguments, precise complexity.",
         optimal="Running time is {est}, matching the target {target}. Let us state the loop invariant that makes it correct.",
+        untargeted="Running time is {est}. No target complexity is established for this problem here, so let us instead state the loop invariant and reason about the bound directly.",
         suboptimal="Your procedure runs in {est}; an {target} algorithm exists. Consider what work is recomputed.",
         unparsed="The source could not be parsed; we will reason about the problem abstractly.",
         failure_intro="Cases in which the invariant fails:",
@@ -166,6 +176,7 @@ _PERSONAS: dict[str, Persona] = {
         # learner; this is aimed at the situation. Same jokes-per-paragraph,
         # no cost to the person reading it at 2am after four failed submissions.
         optimal="{est}, which is the target. Genuinely nothing to complain about. I had a whole thing prepared.",
+        untargeted="{est}. Nobody has established what the target is here, so I am contractually unable to be disappointed.",
         suboptimal="{est}. The target is {target}. Those are different numbers, and therein lies our topic.",
         unparsed="Couldn't parse it. Could be you, could be me, we may never know.",
         failure_intro="A short tour of adjacent realities where this went badly:",
