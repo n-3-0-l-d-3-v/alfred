@@ -6,10 +6,21 @@ static-analysis heuristic. An Anthropic key only enriches the personalized paths
 
 ## Run it
 
+The extension does nothing without this running, so there is one command that
+sets up whatever is missing — virtualenv, dependencies, and a `.env` with a
+freshly generated JWT secret — and then starts the server:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File apps\api\run.ps1
+```
+
+Leave that window open while you use the extension. On macOS/Linux, or if you
+prefer the steps spelled out:
+
 ```bash
 cd apps/api
 python -m venv .venv
-.venv\Scripts\activate            # Windows;  source .venv/bin/activate on macOS/Linux
+source .venv/bin/activate         # .venv\Scripts\activate on Windows
 pip install -r requirements.txt
 uvicorn leetlearn.main:app --reload
 ```
@@ -21,7 +32,7 @@ Open http://127.0.0.1:8000/docs for the interactive API.
 ```bash
 # 1. dev login -> token
 curl -X POST localhost:8000/auth/dev-login -H "content-type: application/json" -d "{\"email\":\"you@test.dev\"}"
-# 2. start a session (KB currently has: two-sum, valid-parentheses)
+# 2. start a session (any slug works - unauthored problems get a generated card)
 curl -X POST localhost:8000/sessions -H "Authorization: Bearer llt_1" -H "content-type: application/json" -d "{\"slug\":\"two-sum\"}"
 # 3. ask for hints L1..L4 (code-free, free). L5 is blocked until you pass.
 curl -X POST localhost:8000/sessions/1/hint -H "Authorization: Bearer llt_1" -H "content-type: application/json" -d "{\"level\":1}"
@@ -63,6 +74,9 @@ leetlearn/
 
 - **Auth** — token is literally `llt_<user_id>`. Swap for magic-link / OAuth → JWT.
 - **DB** — SQLite; models are Postgres-portable. Add Alembic migrations.
-- **Cards** — JSON files loaded into memory; production uses the `problem_cards` table.
+- **Cards** — JSON files plus archetype specializations, loaded into memory;
+  production uses the `problem_cards` table. Problems with no authored card get
+  one generated at request time from the archetype their tags and statement
+  infer to (`mentor/infer.py`, `mentor/synth.py`), marked `verified: false`.
 - **tree-sitter** — only Python static analysis is wired; other languages return an
   honest "not yet" and still get card-based hints.
