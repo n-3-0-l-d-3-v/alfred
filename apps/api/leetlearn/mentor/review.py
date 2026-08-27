@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 
 from ..analysis import CodeSignals
-from . import personas, reactions
+from . import misconceptions, personas, reactions
 from .cards import ProblemCard
 from .contracts import FailureCase, ReviewSection, RichReview
 
@@ -201,6 +201,19 @@ def _voiced_sections(persona, sections: list[ReviewSection]) -> list[ReviewSecti
     return ordered
 
 
+def _gallery(card: ProblemCard, signals: CodeSignals) -> list[dict]:
+    """Failures from this learner's code first, then the card's own."""
+    seen: set[str] = set()
+    out: list[dict] = []
+    for case in misconceptions.derive(signals) + list(card.failure_cases):
+        key = case["mistake"].strip().lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(case)
+    return out
+
+
 def build_review(
     card: ProblemCard,
     signals: CodeSignals,
@@ -286,7 +299,12 @@ def build_review(
             _robustness_lens(signals, target),
             _alternatives_lens(card, signals, est),
         ]),
-        failure_gallery=[FailureCase(**fc) for fc in card.failure_cases],
+        # The card's gallery is the same list for everyone who opens the
+        # problem, so most of it is about mistakes this reader did not make.
+        # The derived cases come from the shape actually on screen, and lead
+        # for that reason. Deduped by mistake text, since an archetype and the
+        # code will often name the same trap.
+        failure_gallery=[FailureCase(**fc) for fc in _gallery(card, signals)],
         failure_intro=p.failure_intro,
         what_you_did_well=well,
         try_next=card.rewrite_challenges,
