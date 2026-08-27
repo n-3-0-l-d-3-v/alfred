@@ -28,7 +28,10 @@
     // The header label is the one piece of chrome outside the panes, so nothing
     // else resets it. Left alone it kept reading "not on a problem" over a
     // fully loaded problem, because only the success path ever wrote to it.
-    if (paneId !== "main") $("contextLabel").textContent = "not on a problem";
+    // A status indicator, not a title: the problem bar directly below carries
+    // the title at a readable size, and printing it twice in a 400px panel
+    // wasted the whole first row saying what the second row already said.
+    $("contextLabel").textContent = paneId === "main" ? "" : "not on a problem";
   }
 
   /** Render a failure inside `el`, routing the two states that aren't the
@@ -105,9 +108,6 @@
     }
     state.ctx = ctx;
     show("main");
-    // Set from the page immediately. Waiting for the card meant a slow or
-    // failing card load left the header contradicting the panel underneath it.
-    $("contextLabel").textContent = ctx.title || ctx.slug;
 
     try {
       // The adapter reports null when it genuinely could not read the language.
@@ -137,7 +137,6 @@
 
     // LeetCode colours difficulty rather than outlining it; matching that is
     // most of what makes the panel read as part of the page.
-    $("contextLabel").textContent = card.title || state.ctx?.slug || "";
     const diff = String(card.difficulty || "").toLowerCase();
     $("problemBar").innerHTML =
       `<span class="title">${esc(card.title)}</span>` +
