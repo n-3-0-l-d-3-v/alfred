@@ -15,10 +15,11 @@ from sqlalchemy.orm import Session as DbSession
 
 from .models import ProblemMeta
 
-# Inference reads keywords from the opening of a statement — the task itself.
-# Past a couple of thousand characters it is worked examples and constraint
-# tables, which add scoring noise and a lot of rows.
-MAX_STATEMENT = 2000
+# Long enough to keep the worked examples, which sit after the task description
+# and are parsed for concrete inputs (see `mentor.examples`). The original 2000
+# was chosen when only keywords were read from this and would cut the examples
+# off exactly on the problems whose descriptions are longest.
+MAX_STATEMENT = 12000
 
 
 def remember(

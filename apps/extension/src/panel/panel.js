@@ -311,6 +311,20 @@
       )
       .join("");
 
+    // The problem's own worked examples, quoted verbatim. Concrete inputs the
+    // learner can paste into the test box are what separate advice about this
+    // problem from advice about problems in general.
+    const examples = (r.worked_examples ?? [])
+      .map(
+        (e) => `<div class="wex">
+          <code class="wex-in">${esc(e.input)}</code>
+          <span class="wex-arrow">-&gt;</span>
+          <code class="wex-out">${esc(e.output)}</code>
+          ${e.explanation ? `<div class="wex-why muted small">${esc(e.explanation)}</div>` : ""}
+        </div>`
+      )
+      .join("");
+
     const failures = (r.failure_gallery ?? [])
       .map(
         (f) => `<div class="failure">
@@ -343,6 +357,8 @@
         <ul>${(r.what_you_did_well ?? []).map((s) => `<li>${esc(s)}</li>`).join("")}</ul></section>
 
       ${lenses}
+
+      ${examples ? `<section class="lens"><h3>Trace these by hand</h3>${examples}</section>` : ""}
 
       ${failures ? `<section class="lens"><h3>${esc(r.failure_intro)}</h3>${failures}</section>` : ""}
 

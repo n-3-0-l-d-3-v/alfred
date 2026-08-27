@@ -121,6 +121,10 @@ class RichReview(BaseModel):
     # A typographic verdict stamp plus one written line. Replaces the old
     # emoji+caption "meme" field, which read as generated and aged badly.
     reaction: dict | None = None
+    # The problem's own worked examples, parsed from its statement. Concrete
+    # inputs a learner can paste into the test box are the difference between
+    # advice about this problem and advice about problems in general.
+    worked_examples: list[dict] = []
     card_verified: bool = True
     source: str = "signals"  # signals (offline) | llm (enriched)
 

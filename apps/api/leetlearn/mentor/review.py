@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 
 from ..analysis import CodeSignals
-from . import misconceptions, personas, reactions
+from . import examples as worked, misconceptions, personas, reactions
 from .cards import ProblemCard
 from .contracts import FailureCase, ReviewSection, RichReview
 
@@ -69,12 +69,18 @@ def _complexity_lens(signals: CodeSignals, est: str, target: str) -> ReviewSecti
                 "Unmemoized recursion recomputes identical subproblems — the call tree branches "
                 "instead of collapsing. Memoize, or rebuild it bottom-up."
             )
-    if signals.data_structures:
-        findings.append(f"Data structures in play: {', '.join(signals.data_structures)}.")
+    deliberate = [d for d in signals.data_structures
+                  if d.lower() in {"dict", "set", "heap", "deque", "stack", "counter", "defaultdict"}]
+    if deliberate:
+        findings.append(
+            f"The {', '.join(deliberate)} is what buys you the lookup — that is where "
+            "the extra space is going, and what you would have to give up to get "
+            "constant space."
+        )
     return ReviewSection(lens="complexity", title="Time & space", findings=findings)
 
 
-def _correctness_lens(card: ProblemCard, signals: CodeSignals) -> ReviewSection:
+def _correctness_lens(card: ProblemCard, signals: CodeSignals, examples) -> ReviewSection:
     findings = []
     if signals.parsed:
         if signals.early_exit:
@@ -82,18 +88,37 @@ def _correctness_lens(card: ProblemCard, signals: CodeSignals) -> ReviewSection:
                 "You return as soon as the answer is found rather than finishing the "
                 "scan — no wasted iterations after the result is known."
             )
-        else:
+        elif signals.max_loop_depth >= 1:
             findings.append(
                 "There's no early exit — the loop runs to completion even once the "
                 "answer is determined. Correct, and on this problem cheap, but worth "
                 "noticing as a habit."
             )
-        if signals.functions:
-            named = ", ".join(sorted(signals.functions)[:3])
-            findings.append(f"Structure: {len(signals.functions)} function(s) — {named}.")
+        # "Structure: 1 function(s) — isSubsequence" used to sit here. It is a
+        # statistic, not a finding: it restates something the reader can see in
+        # one glance at their own screen and carries no judgement about it. A
+        # review made of such lines reads as generated no matter how the
+        # sentences are phrased, so the bar is now that a finding must tell the
+        # reader something they did not already know.
+        if len(signals.functions) >= 3:
+            findings.append(
+                f"{len(signals.functions)} functions for one problem — worth checking "
+                "each one is doing something the others need, rather than being a "
+                "step that got extracted mid-thought."
+            )
+
+    # The problem's own examples, quoted. A learner can re-run these in ten
+    # seconds; "worth re-checking against these" followed by abstract edge-case
+    # descriptions is advice they will not act on.
+    if examples:
+        shown = "; ".join(f"{e.render_input()} → {e.output}" for e in examples[:2])
+        findings.append(
+            f"Trace your code by hand on the given examples — {shown}. If you cannot "
+            "predict the output before running it, the logic is not yet yours."
+        )
     if card.edge_cases:
         findings.append(
-            "Worth re-checking against these: " + "; ".join(card.edge_cases[:4]) + "."
+            "Then the cases the examples don't cover: " + "; ".join(card.edge_cases[:4]) + "."
         )
     if not findings:
         findings.append("It passes the judge — the core logic is sound.")
@@ -201,11 +226,11 @@ def _voiced_sections(persona, sections: list[ReviewSection]) -> list[ReviewSecti
     return ordered
 
 
-def _gallery(card: ProblemCard, signals: CodeSignals) -> list[dict]:
+def _gallery(card: ProblemCard, signals: CodeSignals, examples) -> list[dict]:
     """Failures from this learner's code first, then the card's own."""
     seen: set[str] = set()
     out: list[dict] = []
-    for case in misconceptions.derive(signals) + list(card.failure_cases):
+    for case in misconceptions.derive(signals, examples) + list(card.failure_cases):
         key = case["mistake"].strip().lower()
         if key in seen:
             continue
@@ -220,8 +245,10 @@ def build_review(
     persona_key: str = personas.MENTOR,
     hints_used: int = 0,
     failed_attempts: int = 0,
+    statement: str | None = None,
 ) -> RichReview:
     p = personas.get(persona_key)
+    examples = worked.parse(statement)
     target = str(card.complexity.get("target_time", "O(n)"))
     est = signals.estimated_time_complexity()
     benchmarked = _is_benchmark(target)
@@ -295,7 +322,7 @@ def build_review(
         target_time=target,
         sections=_voiced_sections(p, [
             _complexity_lens(signals, est, target),
-            _correctness_lens(card, signals),
+            _correctness_lens(card, signals, examples),
             _robustness_lens(signals, target),
             _alternatives_lens(card, signals, est),
         ]),
@@ -304,13 +331,17 @@ def build_review(
         # The derived cases come from the shape actually on screen, and lead
         # for that reason. Deduped by mistake text, since an archetype and the
         # code will often name the same trap.
-        failure_gallery=[FailureCase(**fc) for fc in _gallery(card, signals)],
+        failure_gallery=[FailureCase(**fc) for fc in _gallery(card, signals, examples)],
         failure_intro=p.failure_intro,
         what_you_did_well=well,
         try_next=card.rewrite_challenges,
         next_intro=p.next_intro,
         closer=p.closer,
         reaction=reaction.model_dump() if reaction else None,
+        worked_examples=[
+            {"input": e.render_input(), "output": e.output, "explanation": e.explanation}
+            for e in examples
+        ],
         card_verified=card.verified,
         source="signals",
     )

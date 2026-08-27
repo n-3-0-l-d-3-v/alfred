@@ -19,6 +19,7 @@ can recognise the shape next time rather than memorising the instance.
 from __future__ import annotations
 
 from ..analysis import CodeSignals
+from .examples import Example, concrete_trigger
 
 LOOKUP = {"dict", "set", "map", "hashmap", "unordered_map", "counter", "defaultdict"}
 
@@ -28,19 +29,38 @@ def _case(mistake: str, trigger: str, expected: str, actual: str, why: str) -> d
             "actual": actual, "why": why}
 
 
-def derive(signals: CodeSignals, limit: int = 4) -> list[dict]:
-    """Failure cases implied by this code's shape, most consequential first."""
+def derive(
+    signals: CodeSignals,
+    examples: list[Example] | None = None,
+    limit: int = 4,
+) -> list[dict]:
+    """Failure cases implied by this code's shape, most consequential first.
+
+    `examples` are the problem's own worked inputs. Where one fits, it replaces
+    the generic description of a trigger: "try s = "axc", t = "ahbgdc"" is a
+    thing a learner can act on in ten seconds, and "an input at the top of the
+    stated constraints" is a sentence about problems in general.
+    """
     if not signals.parsed:
         return []
 
+    examples = examples or []
     out: list[tuple[int, dict]] = []
     depth = signals.max_loop_depth
     has_lookup = any(d.lower() in LOOKUP for d in signals.data_structures)
 
+    def scaled(generic: str) -> str:
+        """A trigger about size. The examples are all small, so they cannot
+        stand in for one — but naming the shape they share still beats prose."""
+        if examples:
+            names = ", ".join(examples[0].args)
+            return f"a much larger {names} than the examples give you"
+        return generic
+
     if signals.has_recursion and not signals.has_memoization:
         out.append((100, _case(
             "Recursing without remembering results",
-            "an input large enough that the same subproblem recurs — often n around 40",
+            scaled("an input large enough that the same subproblem recurs — often n around 40"),
             "an answer in well under a second",
             "no answer at all, or a stack overflow",
             "Each call spawns more calls that redo work an earlier branch already "
@@ -66,7 +86,7 @@ def derive(signals: CodeSignals, limit: int = 4) -> list[dict]:
     if depth >= 2:
         out.append((90, _case(
             f"Looping {depth} deep over the same data",
-            "an input at the top of the stated constraints",
+            scaled("an input at the top of the stated constraints"),
             "a result inside the time limit",
             "Time Limit Exceeded",
             "The judge's sample inputs are small enough that a quadratic solution "
@@ -124,7 +144,10 @@ def derive(signals: CodeSignals, limit: int = 4) -> list[dict]:
     if depth == 0 and not signals.has_recursion:
         out.append((40, _case(
             "Reading the input before checking there is any",
-            "an empty input",
+            concrete_trigger(
+                [e for e in examples if any(v in ("[]", '""', "0") for v in e.args.values())],
+                "an empty input",
+            ),
             "the stated result for nothing at all",
             "an index error, or a wrong default",
             "The first access usually happens before any guard, because the guard "

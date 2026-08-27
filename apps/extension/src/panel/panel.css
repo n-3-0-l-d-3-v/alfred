@@ -645,3 +645,28 @@ section.lens li::marker { color: var(--text-3); }
   border: 3px solid var(--ink-0);
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+
+/* ── the problem's own worked examples ──────────────────────────────────── */
+
+/* Quoted verbatim from the statement. These are the most re-readable thing in
+   the review, so they get monospace and room rather than being folded into a
+   sentence. */
+.wex {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.wex:last-child { border-bottom: 0; }
+.wex-in,
+.wex-out {
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  word-break: break-word;
+}
+.wex-out { color: var(--earned); }
+.wex-arrow { color: var(--text-3); }
+.wex-why { flex: 1 1 100%; }

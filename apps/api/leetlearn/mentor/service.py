@@ -181,12 +181,14 @@ class HintService:
             raise HintGateError("Reviews unlock after a passing submission.")
         card = self._require_card(db, session)
         signals = analyze(session.language, code)
+        meta = problem_meta.lookup(db, session.platform, session.slug)
         return build_review(
             card,
             signals,
             persona_key=persona,
             hints_used=session.hints_used,
             failed_attempts=failed_attempts,
+            statement=meta.statement if meta else None,
         )
 
     # --- interview -----------------------------------------------------------
