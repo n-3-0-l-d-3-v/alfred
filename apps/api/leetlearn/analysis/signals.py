@@ -34,6 +34,14 @@ class CodeSignals:
             return "unknown"
         if self.has_recursion and not self.has_memoization:
             return "O(2^n) or worse (unmemoized recursion)"
+        if self.has_recursion and self.has_memoization and self.max_loop_depth == 0:
+            # Memoised recursion has no loop to count, so the table below reads
+            # it as O(1) — which told anyone who wrote top-down DP that their
+            # solution was constant time. One pass over the distinct subproblems
+            # is the honest rough answer; it understates multi-dimensional
+            # states, which is the same kind of approximation as the rest of
+            # this estimate and is labelled as such everywhere it surfaces.
+            return "O(n)"
         table = {0: "O(1)", 1: "O(n)", 2: "O(n^2)", 3: "O(n^3)"}
         return table.get(self.max_loop_depth, f"O(n^{self.max_loop_depth})")
 

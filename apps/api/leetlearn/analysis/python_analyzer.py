@@ -75,6 +75,18 @@ def analyze_python(code: str) -> CodeSignals:
                 sig.has_memoization = True
         elif isinstance(node, ast.arg):
             variables.add(node.arg)
+            # `def climb(n, memo={})` — the commonest hand-rolled memo in Python
+            # and, before this, invisible: the table is a parameter, so it is
+            # never a Store Name anywhere in the function.
+            if node.arg.lower() in _MEMO_NAMES:
+                sig.has_memoization = True
+        elif isinstance(node, ast.Subscript) and isinstance(node.ctx, ast.Store):
+            # `memo[n] = ...`. The Store context belongs to the Subscript; the
+            # table's name sits underneath it in Load context, so the Name branch
+            # above never sees it as an assignment.
+            base = node.value
+            if isinstance(base, ast.Name) and base.id.lower() in _MEMO_NAMES:
+                sig.has_memoization = True
 
         # data structures (literals + constructors + heapq usage)
         elif isinstance(node, ast.Dict):
