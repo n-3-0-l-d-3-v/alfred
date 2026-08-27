@@ -423,6 +423,11 @@ button.ghost { background: transparent; }
 .cx .v.warn { color: var(--caution); }
 .cx-sep { color: var(--text-3); font-size: var(--t-small); }
 
+/* No verified target to compare against — the estimate stands alone rather
+   than being set against a sentence. */
+.cx.solo { grid-template-columns: auto 1fr; text-align: left; }
+.cx.solo .cx-note { text-align: left; }
+
 section.lens { margin-bottom: var(--s5); }
 section.lens h3 {
   margin: 0 0 var(--s3);

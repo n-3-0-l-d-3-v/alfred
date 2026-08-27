@@ -124,7 +124,12 @@ def _dedupe_article(before: str, value: str) -> str:
     if not _ARTICLE.match(value):
         return value
 
-    words = before.lower().split()
+    # Punctuation ends a noun phrase, so an article on the far side of it
+    # governs a different noun: in "a count, a position, a yes or no,
+    # {collection} rebuilt", the nearest article belongs to "yes" and the
+    # substituted noun needs to keep its own.
+    clause = re.split(r"[,;:—]", before)[-1]
+    words = clause.lower().split()
     # Five words back, not three: "An empty or single-element {collection}" puts
     # the governing article four words from the placeholder, and a shorter
     # window silently left that one case broken while fixing every other.

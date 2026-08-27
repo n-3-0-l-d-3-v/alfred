@@ -256,3 +256,20 @@ def test_a_becomes_an_when_stripping_leaves_a_vowel():
     be recomputed — otherwise "A {collection}" renders "A array"."""
     assert archetypes.render_all(("A {collection}",), {"collection": "the array"})[0] == "An array"
     assert archetypes.render_all(("An {collection}",), {"collection": "the grid"})[0] == "A grid"
+
+
+@pytest.mark.parametrize(
+    "template,expected",
+    [
+        # Punctuation ends the noun phrase, so the article before it governs a
+        # different noun and the substituted one keeps its own.
+        ("a count, a position, a yes or no, {collection} rebuilt",
+         "a count, a position, a yes or no, the array rebuilt"),
+        ("Consider the target; {collection} is unsorted",
+         "Consider the target; the array is unsorted"),
+        # ...but a governing article on the same side of the comma still wins.
+        ("First, an empty {collection}", "First, an empty array"),
+    ],
+)
+def test_article_dedup_respects_clause_boundaries(template, expected):
+    assert archetypes.render_all((template,), {"collection": "the array"})[0] == expected

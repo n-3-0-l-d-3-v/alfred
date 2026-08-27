@@ -289,6 +289,11 @@
 
   function renderReview(r) {
     const optimal = r.verdict === "optimal";
+    // A generated card has no verified target complexity, so the side-by-side
+    // would read "Yours O(n) vs Target better than brute force" — a comparison
+    // against a sentence. Show the estimate alone and say why there's nothing
+    // to compare it to.
+    const ungraded = !/^O\(.+\)$/i.test(String(r.target_time ?? "").trim());
     // A typographic stamp rather than a 26px emoji. The joke lives in the
     // writing, which ages better than any meme format and doesn't announce
     // itself as generated.
@@ -322,11 +327,18 @@
     $("reviewOut").innerHTML = `
       <div class="headline">${esc(r.headline)}</div>
       ${reaction}
-      <div class="cx">
-        <div><div class="k label">Yours</div><div class="v ${optimal ? "good" : "warn"}">${esc(r.complexity_time)}</div></div>
-        <div class="cx-sep">${optimal ? "matches" : "vs"}</div>
-        <div><div class="k label">Target</div><div class="v">${esc(r.target_time)}</div></div>
-      </div>
+      ${
+        ungraded
+          ? `<div class="cx solo">
+               <div><div class="k label">Yours</div><div class="v">${esc(r.complexity_time)}</div></div>
+               <div class="cx-note muted small">No verified target for this problem — this is a reading of your code, not a grade.</div>
+             </div>`
+          : `<div class="cx">
+               <div><div class="k label">Yours</div><div class="v ${optimal ? "good" : "warn"}">${esc(r.complexity_time)}</div></div>
+               <div class="cx-sep">${optimal ? "matches" : "vs"}</div>
+               <div><div class="k label">Target</div><div class="v">${esc(r.target_time)}</div></div>
+             </div>`
+      }
 
       <section class="lens"><h3>What you did well</h3>
         <ul>${(r.what_you_did_well ?? []).map((s) => `<li>${esc(s)}</li>`).join("")}</ul></section>
