@@ -228,8 +228,12 @@ def analyze_with_treesitter(language: str, code: str) -> CodeSignals:
     def scan_loop(node):
         if node.type in spec.returns or node.type in spec.breaks:
             sig.early_exit = True
-        if node.type in {"augmented_assignment", "update_expression", "assignment_expression", "inc_dec_expression"}:
-            sig.mutation_in_loop = True
+        # `i++` and `total += x` advance a counter; they do not mutate a
+        # collection. Conflating the two made every loop in every language
+        # report "state is being mutated", which says nothing.
+        if node.type in {"augmented_assignment", "update_expression",
+                         "assignment_expression", "inc_dec_expression"}:
+            sig.counter_update_in_loop = True
         if node.type in spec.calls:
             if _call_name(node, spec, src).lower() in _MUTATORS:
                 sig.mutation_in_loop = True

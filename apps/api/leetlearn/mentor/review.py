@@ -137,10 +137,18 @@ def _robustness_lens(signals: CodeSignals, target: str) -> ReviewSection:
             findings.append(
                 "Deep inputs risk both exponential time and a stack overflow before you ever see a wrong answer."
             )
-        if signals.mutation_in_loop:
+        if signals.mutates_iterated_collection:
             findings.append(
-                "Mutating state inside the loop is correct here but makes the code harder to reason "
-                "about later — the failure mode is a subtle bug during a future edit, not today."
+                "You're changing the collection you're looping over. The loop's position "
+                "is an index into something whose length moves underneath it, so this "
+                "skips elements or runs off the end — and it does so silently, far from "
+                "the line that caused it."
+            )
+        elif signals.mutation_in_loop:
+            findings.append(
+                "You build a collection as you go rather than in one shot. Fine, but it "
+                "means the result depends on the loop completing — worth checking what "
+                "the early return leaves behind, if there is one."
             )
     if not findings:
         findings.append("Nothing here scales badly or mutates surprisingly. It should hold up.")

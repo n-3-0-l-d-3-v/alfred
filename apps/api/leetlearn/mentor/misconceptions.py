@@ -118,7 +118,7 @@ def derive(
             "than discovering it on a failing test.",
         )))
 
-    if depth >= 1 and signals.mutation_in_loop:
+    if signals.mutates_iterated_collection:
         out.append((45, _case(
             "Mutating what you are iterating over",
             "an input where the loop removes or inserts while scanning",

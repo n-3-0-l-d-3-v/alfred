@@ -17,6 +17,29 @@ _MEMO_DECORATORS = {"cache", "lru_cache"}
 _MUTATION_METHODS = {"append", "add", "pop", "update", "remove", "push", "extend", "insert"}
 
 
+def _base_name(node) -> str | None:
+    """The name a subscript writes through: `grid[r][c] = x` -> "grid"."""
+    while isinstance(node, ast.Subscript):
+        node = node.value
+    return node.id if isinstance(node, ast.Name) else None
+
+
+def _iterated_name(loop) -> str | None:
+    """What a loop iterates over, when that is a plain name.
+
+    `for x in nums` -> "nums"; `for x in range(len(nums))` -> "nums", since
+    indexing into a list you are also appending to is the same hazard.
+    """
+    if not isinstance(loop, ast.For):
+        return None
+    it = loop.iter
+    while isinstance(it, ast.Call) and it.args:
+        it = it.args[0]  # unwrap range(...), enumerate(...), len(...)
+    if isinstance(it, ast.Attribute):
+        return None
+    return it.id if isinstance(it, ast.Name) else None
+
+
 def _decorator_name(dec: ast.expr) -> str:
     if isinstance(dec, ast.Name):
         return dec.id
@@ -107,14 +130,30 @@ def analyze_python(code: str) -> CodeSignals:
 
     # per-loop inspection: mutation, early exit, brute-force search
     for loop in [n for n in ast.walk(tree) if isinstance(n, _LOOP_NODES)]:
+        iterated = _iterated_name(loop)
         for inner in ast.walk(loop):
             if isinstance(inner, (ast.Break, ast.Return)):
                 sig.early_exit = True
             elif isinstance(inner, ast.AugAssign):
-                sig.mutation_in_loop = True
+                # `nums[i] += 1` writes into a collection; `i += 1` moves a
+                # counter. Only the first is worth warning about.
+                if isinstance(inner.target, ast.Subscript):
+                    sig.mutation_in_loop = True
+                    if _base_name(inner.target) == iterated:
+                        sig.mutates_iterated_collection = True
+                else:
+                    sig.counter_update_in_loop = True
+            elif isinstance(inner, ast.Assign):
+                for target in inner.targets:
+                    if isinstance(target, ast.Subscript):
+                        sig.mutation_in_loop = True
+                        if _base_name(target) == iterated:
+                            sig.mutates_iterated_collection = True
             elif isinstance(inner, ast.Call) and isinstance(inner.func, ast.Attribute):
                 if inner.func.attr in _MUTATION_METHODS:
                     sig.mutation_in_loop = True
+                    if isinstance(inner.func.value, ast.Name) and inner.func.value.id == iterated:
+                        sig.mutates_iterated_collection = True
             elif isinstance(inner, ast.If):
                 # brute-force linear search: an if inside a loop that breaks/returns
                 for c in ast.walk(inner):

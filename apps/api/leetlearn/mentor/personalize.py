@@ -200,11 +200,17 @@ def observe(signals: CodeSignals) -> list[Observation]:
             weight=44,
         ))
 
-    if signals.mutation_in_loop and depth >= 1:
+    if signals.mutates_iterated_collection:
         out.append(Observation(
-            "mutation_in_loop",
-            "There's state being mutated inside the loop.",
-            weight=35,
+            "mutates_iterated",
+            "You're changing the same collection you're looping over.",
+            weight=88,
+        ))
+    elif signals.mutation_in_loop:
+        out.append(Observation(
+            "builds_collection",
+            "You're building up a collection as you go rather than computing it in one shot.",
+            weight=36,
         ))
 
     if len(signals.functions) >= 2:

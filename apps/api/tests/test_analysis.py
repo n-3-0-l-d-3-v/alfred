@@ -121,3 +121,57 @@ def test_memoised_recursion_is_not_estimated_as_constant_time():
 def test_a_variable_named_memo_does_not_imply_recursion():
     signals = analyze("python", "def f(a):\n    memo = {}\n    for x in a: memo[x] = 1\n    return memo\n")
     assert not signals.has_recursion
+
+
+# --- mutation: a counter is not a collection ---------------------------------
+
+# `mutation_in_loop` used to be set by any augmented assignment, so `i += 1`
+# reported "state is being mutated inside the loop". Nearly every loop ever
+# written tripped it, which made the observation vacuous — and in the failure
+# gallery it became "you are mutating what you are iterating over", which on
+# two-pointer code is simply false.
+
+MUTATION_CASES = {
+    "counter_only": ("def f(s, t):\n"
+                     "    c1 = 0\n    c2 = 0\n"
+                     "    while c1 < len(s) and c2 < len(t):\n"
+                     "        if s[c1] == t[c2]: c1 += 1\n"
+                     "        c2 += 1\n"
+                     "    return c1 == len(s)\n",
+                     {"collection": False, "counter": True, "iterated": False}),
+    "accumulator": ("def f(a):\n    total = 0\n    for x in a: total += x\n    return total\n",
+                    {"collection": False, "counter": True, "iterated": False}),
+    "builds_other_list": ("def f(a):\n    out = []\n    for x in a: out.append(x)\n    return out\n",
+                          {"collection": True, "counter": False, "iterated": False}),
+    "appends_to_iterated": ("def f(a):\n    for x in a: a.append(x)\n    return a\n",
+                            {"collection": True, "counter": False, "iterated": True}),
+    "writes_into_iterated": ("def f(a):\n    for i in range(len(a)): a[i] = 0\n    return a\n",
+                             {"collection": True, "counter": False, "iterated": True}),
+}
+
+
+@pytest.mark.parametrize("name", sorted(MUTATION_CASES), ids=sorted(MUTATION_CASES))
+def test_mutation_signals_distinguish_counters_from_collections(name):
+    code, want = MUTATION_CASES[name]
+    sig = analyze("python", code)
+    assert sig.mutation_in_loop is want["collection"], f"{name}: collection mutation"
+    assert sig.counter_update_in_loop is want["counter"], f"{name}: counter update"
+    assert sig.mutates_iterated_collection is want["iterated"], f"{name}: iterated collection"
+
+
+def test_two_pointer_code_is_not_accused_of_mutating_its_input():
+    """The bug this split exists for."""
+    from leetlearn.mentor import misconceptions
+
+    sig = analyze("python", MUTATION_CASES["counter_only"][0])
+    mistakes = " ".join(c["mistake"].lower() for c in misconceptions.derive(sig))
+    assert "mutating what you are iterating over" not in mistakes
+
+
+def test_code_that_really_does_mutate_its_input_is_still_caught():
+    """The fix must not silence the genuine case."""
+    from leetlearn.mentor import misconceptions
+
+    sig = analyze("python", MUTATION_CASES["appends_to_iterated"][0])
+    mistakes = " ".join(c["mistake"].lower() for c in misconceptions.derive(sig))
+    assert "mutating what you are iterating over" in mistakes

@@ -15,7 +15,19 @@ class CodeSignals:
     max_loop_depth: int = 0
     has_recursion: bool = False
     has_memoization: bool = False
+    # A *collection* is grown, shrunk or written to inside a loop. Worth saying
+    # something about.
     mutation_in_loop: bool = False
+    # A scalar is advanced inside a loop — `i += 1`, `total += x`. This used to
+    # be folded into `mutation_in_loop`, which meant essentially every loop ever
+    # written reported "state is being mutated": vacuous as an observation, and
+    # downstream it became the flatly false "you are mutating what you are
+    # iterating over". Kept as its own signal because it is genuinely useful for
+    # spotting a two-pointer walk, and useless as a warning.
+    counter_update_in_loop: bool = False
+    # The mutated collection is the one being iterated — the case that actually
+    # causes skipped elements and index errors.
+    mutates_iterated_collection: bool = False
     early_exit: bool = False
 
     data_structures: list[str] = field(default_factory=list)
