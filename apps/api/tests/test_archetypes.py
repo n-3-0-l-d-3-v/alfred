@@ -8,11 +8,14 @@ drifts toward giving the answer fails the build rather than reaching a learner.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from leetlearn.mentor import archetype_library  # noqa: F401  (registers the library)
 from leetlearn.mentor import archetypes
 from leetlearn.mentor.card_builder import Spec, build, build_all
+from leetlearn.mentor.cards import CardStore
 from leetlearn.mentor.contracts import looks_like_code
 
 # Deliberately code-shaped substitutions. If a template can be pushed into
@@ -193,3 +196,63 @@ def test_every_archetype_can_build_a_loadable_card(arch):
     card = build(_spec(slug=f"demo-{arch.key}", archetype=arch.key, subs=PLAIN_SUBS))
     assert card.hint_ladder.level(4)
     assert card.complexity["target_time"]
+
+
+# --- article agreement -------------------------------------------------------
+
+# Nouns are written with their article ("the array") because most templates read
+# "walk through {collection}". Templates that supply their own article rendered
+# as "An empty the array", which shipped on most cards in the library — the kind
+# of defect that survives review because template and noun are each correct
+# alone and only wrong together.
+
+DOUBLE_ARTICLE = re.compile(r"\b(?:a|an|the)\s+(?:a|an|the)\b", re.I)
+
+
+def _all_prose(card):
+    texts = [
+        card.understanding,
+        *(card.hint_ladder.level(i) for i in range(1, 5)),
+        *card.edge_cases,
+        *card.rewrite_challenges,
+        *(a.idea for a in card.approaches),
+    ]
+    for entry in card.pitfalls + card.failure_cases:
+        texts += [str(v) for v in entry.values()]
+    return texts
+
+
+@pytest.mark.parametrize("slug", CardStore().load_dir().slugs())
+def test_no_card_renders_a_doubled_article(slug):
+    card = CardStore().load_dir().get(slug)
+    for text in _all_prose(card):
+        match = DOUBLE_ARTICLE.search(text)
+        assert not match, f"{slug}: {text[max(0, match.start() - 30):match.end() + 20]!r}"
+
+
+@pytest.mark.parametrize(
+    "template,expected",
+    [
+        # The template supplies the article; the noun's is dropped.
+        ("An empty {collection}", "An empty array"),
+        ("An empty or single-element {collection}", "An empty or single-element array"),
+        ("The entire {collection}", "The entire array"),
+        ("Scan the {collection}", "Scan the array"),
+        # A preposition means the earlier article governs a different noun, so
+        # the substituted noun keeps its own.
+        ("The length of {collection}", "The length of the array"),
+        ("Walk through {collection}", "Walk through the array"),
+        ("A pass over {collection}", "A pass over the array"),
+        # No article in the template at all — nothing to dedupe.
+        ("{collection} is sorted", "the array is sorted"),
+    ],
+)
+def test_article_dedup_rules(template, expected):
+    assert archetypes.render_all((template,), {"collection": "the array"})[0] == expected
+
+
+def test_a_becomes_an_when_stripping_leaves_a_vowel():
+    """Dropping an article changes the word that follows it, so agreement has to
+    be recomputed — otherwise "A {collection}" renders "A array"."""
+    assert archetypes.render_all(("A {collection}",), {"collection": "the array"})[0] == "An array"
+    assert archetypes.render_all(("An {collection}",), {"collection": "the grid"})[0] == "A grid"

@@ -101,6 +101,61 @@ class Archetype:
         return found
 
 
+_ARTICLE = re.compile(r"^(the|a|an)\s+", re.I)
+# A preposition immediately before the placeholder means the article that came
+# earlier belongs to a different noun: in "the number of {collection}", the
+# "the" attaches to "number", and the substituted noun keeps its own.
+_PREPOSITIONS = {"of", "in", "on", "to", "from", "into", "over", "through",
+                 "across", "within", "between", "against", "for", "with", "by"}
+_ARTICLES = {"a", "an", "the"}
+_VOWEL = re.compile(r"^[aeiou]", re.I)
+
+
+def _dedupe_article(before: str, value: str) -> str:
+    """Drop a substitution's article when the template already supplied one.
+
+    Nouns are written with their article ("the array") because most templates
+    read "walk through {collection}". But some templates supply their own —
+    "An empty {collection}" — and those rendered as "An empty the array". That
+    was shipping to learners on every card with such an edge case, which is most
+    of them; it is the kind of defect that survives review precisely because the
+    template and the noun are correct in isolation and only wrong together.
+    """
+    if not _ARTICLE.match(value):
+        return value
+
+    words = before.lower().split()
+    # Five words back, not three: "An empty or single-element {collection}" puts
+    # the governing article four words from the placeholder, and a shorter
+    # window silently left that one case broken while fixing every other.
+    tail = words[-5:]
+    for i, word in enumerate(tail):
+        if word in _ARTICLES:
+            # An article already governs this slot — unless something between it
+            # and the placeholder starts a new noun phrase.
+            if any(w in _PREPOSITIONS for w in tail[i + 1:]):
+                return value
+            return _ARTICLE.sub("", value, count=1)
+    return value
+
+
+def _fix_article_agreement(text: str) -> str:
+    """`a`/`an` to match the word that ended up after it.
+
+    Stripping an article changes the following word, so "A {collection}" with
+    "the array" becomes "A array" without this.
+    """
+    def swap(match: re.Match[str]) -> str:
+        article, space, word = match.group(1), match.group(2), match.group(3)
+        wants_an = bool(_VOWEL.match(word))
+        if wants_an == (article.lower() == "an"):
+            return match.group(0)
+        fixed = "an" if wants_an else "a"
+        return (fixed.capitalize() if article[0].isupper() else fixed) + space + word
+
+    return re.sub(r"\b(an|a|An|A)(\s+)(\w+)", swap, text)
+
+
 def _render(text: str, subs: dict[str, str]) -> str:
     """Substitute `{name}` placeholders, failing loudly on anything missing.
 
@@ -108,14 +163,17 @@ def _render(text: str, subs: dict[str, str]) -> str:
     learners, so an unsupplied noun is an error at build time — the same
     fail-fast posture `CardStore` takes with malformed cards.
     """
-
-    def replace(match: re.Match[str]) -> str:
+    out: list[str] = []
+    last = 0
+    for match in _PLACEHOLDER.finditer(text):
         name = match.group(1)
         if name not in subs:
             raise MissingSubstitution(name)
-        return subs[name]
-
-    return _PLACEHOLDER.sub(replace, text)
+        out.append(text[last:match.start()])
+        out.append(_dedupe_article("".join(out), subs[name]))
+        last = match.end()
+    out.append(text[last:])
+    return _fix_article_agreement("".join(out))
 
 
 def render_all(items, subs: dict[str, str]):
