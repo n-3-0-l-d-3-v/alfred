@@ -38,9 +38,10 @@ class Observation:
     """Something true about the learner's code, phrased as a mentor would say it.
 
     `weight` orders competing observations: the higher the number, the more it
-    dominates what the learner should think about next. Only the strongest is
-    shown, because a hint that lists four things is a code review, and a code
+    dominates what the learner should think about next. Exactly one is shown per
+    hint, because a hint that lists four things is a code review, and a code
     review before you have solved it is the thing this product exists to refuse.
+    Successive hints walk down the ranking rather than repeating the top one.
     """
 
     key: str
@@ -52,8 +53,37 @@ def _has(signals: CodeSignals, names: set[str]) -> bool:
     return any(d.lower() in names for d in signals.data_structures)
 
 
+COUNTING_STRUCTURES = {"counter", "defaultdict"}
+
+# Single-letter names conventionally used as positions rather than values. Two
+# of them moving through the same data is the visible signature of a
+# two-pointer attempt, which is worth naming back to the learner.
+_INDEX_NAMES = {"i", "j", "k", "l", "r", "lo", "hi", "left", "right", "slow", "fast",
+                "p", "q", "start", "end", "head", "tail", "first", "second",
+                "read", "write", "front", "back"}
+
+# `c1`/`c2`, `p1`/`p2`, `idx1`/`idx2` — a numbered pair is one of the commonest
+# ways people name two pointers, and a fixed vocabulary list misses all of them.
+# Anchored to a short prefix so it does not sweep up `nums2` or `sum1`.
+_NUMBERED_INDEX = re.compile(r"^[a-z]{1,3}\d$", re.I)
+
+
+def _is_position_name(name: str) -> bool:
+    return name.lower() in _INDEX_NAMES or bool(_NUMBERED_INDEX.match(name))
+
+
 def observe(signals: CodeSignals) -> list[Observation]:
-    """Everything worth noticing about this code, strongest first."""
+    """Everything worth noticing about this code, strongest first.
+
+    Breadth matters here as much as accuracy. A handful of observations means
+    most code falls through to the same two or three lines, and a hint that
+    opens with the same sentence every time reads as canned however true it is —
+    which is the precise failure the module exists to avoid.
+
+    Every observation describes *shape*: what is on screen, not what to do about
+    it. That is what keeps the AC gate intact when these are prepended to a
+    ladder rung.
+    """
     if not signals.parsed:
         return []
 
@@ -61,6 +91,17 @@ def observe(signals: CodeSignals) -> list[Observation]:
     depth = signals.max_loop_depth
     has_lookup = _has(signals, LOOKUP_STRUCTURES)
     has_ordered = _has(signals, ORDERED_STRUCTURES)
+    has_counting = _has(signals, COUNTING_STRUCTURES)
+    indexes = sorted({v for v in signals.variables if _is_position_name(v)})
+
+    # --- where they are overall ---
+
+    if depth == 0 and not signals.has_recursion and not signals.functions:
+        out.append(Observation(
+            "barely_started",
+            "Not much in the editor yet — no loops, no recursion.",
+            weight=95,
+        ))
 
     if signals.has_recursion and not signals.has_memoization:
         out.append(Observation(
@@ -68,6 +109,15 @@ def observe(signals: CodeSignals) -> list[Observation]:
             "You're recursing, but nothing is remembering results between calls yet.",
             weight=90,
         ))
+    elif signals.has_recursion and signals.has_memoization:
+        out.append(Observation(
+            "recursion_with_memo",
+            "You've got recursion with a table remembering results, so repeated "
+            "subproblems are already collapsing rather than branching.",
+            weight=55,
+        ))
+
+    # --- loop shape ---
 
     if depth >= 3:
         out.append(Observation(
@@ -90,7 +140,39 @@ def observe(signals: CodeSignals) -> list[Observation]:
             weight=70,
         ))
 
-    if has_lookup and depth <= 1:
+    # Several flat passes is a different situation from one nested pair: the
+    # cost is linear either way, so the question is whether the passes need to
+    # be separate, not whether the work is quadratic.
+    if depth == 1 and signals.loops >= 3:
+        out.append(Observation(
+            "many_flat_passes",
+            f"That's {signals.loops} separate passes over the data, none of them nested.",
+            weight=50,
+        ))
+    elif depth == 1 and signals.loops == 2:
+        out.append(Observation(
+            "two_flat_passes",
+            "Two separate passes, one after the other rather than nested.",
+            weight=42,
+        ))
+
+    if depth >= 1 and len(indexes) >= 2:
+        out.append(Observation(
+            "multiple_positions",
+            f"You're tracking more than one position at once ({', '.join(indexes[:3])}).",
+            weight=48,
+        ))
+
+    # --- structures ---
+
+    if has_counting:
+        out.append(Observation(
+            "counting_structure",
+            "You're counting occurrences rather than just recording that "
+            "something was seen.",
+            weight=52,
+        ))
+    elif has_lookup and depth <= 1:
         out.append(Observation(
             "single_pass_lookup",
             "One pass with a lookup structure — that's the shape people usually "
@@ -102,6 +184,22 @@ def observe(signals: CodeSignals) -> list[Observation]:
         kept = ", ".join(sorted(d for d in signals.data_structures if d.lower() in ORDERED_STRUCTURES))
         out.append(Observation("ordered_structure", f"You're using {kept}.", weight=45))
 
+    if depth >= 1 and not has_lookup and not has_ordered and not signals.has_recursion:
+        out.append(Observation(
+            "no_auxiliary_structure",
+            "You're working straight off the input with nothing kept on the side.",
+            weight=38,
+        ))
+
+    # --- habits worth naming ---
+
+    if depth >= 2 and not signals.early_exit:
+        out.append(Observation(
+            "no_early_exit_nested",
+            "The nested loops run to completion even once the answer is settled.",
+            weight=44,
+        ))
+
     if signals.mutation_in_loop and depth >= 1:
         out.append(Observation(
             "mutation_in_loop",
@@ -109,11 +207,12 @@ def observe(signals: CodeSignals) -> list[Observation]:
             weight=35,
         ))
 
-    if depth == 0 and not signals.has_recursion and not signals.functions:
+    if len(signals.functions) >= 2:
         out.append(Observation(
-            "barely_started",
-            "Not much in the editor yet — no loops, no recursion.",
-            weight=95,
+            "decomposed",
+            f"You've split this across {len(signals.functions)} functions rather than "
+            "one long body.",
+            weight=30,
         ))
 
     if signals.early_exit:
@@ -126,13 +225,23 @@ def observe(signals: CodeSignals) -> list[Observation]:
     return sorted(out, key=lambda o: -o.weight)
 
 
-def lead_in(signals: CodeSignals) -> str:
-    """One sentence about their code to open a hint with, or empty if nothing
-    useful can be said. Silence beats a filler observation."""
+def lead_in(signals: CodeSignals, seen: int = 0) -> str:
+    """One sentence about their code to open a hint with.
+
+    `seen` is how many hints this learner has already been given on this
+    problem, and it walks down the ranked observations rather than re-serving
+    the strongest one every time. Opening four consecutive hints with "There's
+    state being mutated inside the loop" makes the whole ladder read as canned,
+    which undoes exactly what leading with an observation was for.
+
+    Returns empty once the observations run out. Silence beats repetition — and
+    beats a filler observation, which is the same rule the module already
+    applied to code it could not parse.
+    """
     if not signals.parsed:
         return ""
-    top = observe(signals)
-    return top[0].text if top else ""
+    ranked = observe(signals)
+    return ranked[seen].text if seen < len(ranked) else ""
 
 
 def suggest_level(signals: CodeSignals, requested: int, hints_used: int) -> tuple[int, str | None]:
@@ -160,14 +269,14 @@ def suggest_level(signals: CodeSignals, requested: int, hints_used: int) -> tupl
     return requested, None
 
 
-def compose(nudge: str, signals: CodeSignals, note: str | None = None) -> str:
+def compose(nudge: str, signals: CodeSignals, note: str | None = None, seen: int = 0) -> str:
     """Attach the code observation to a card's ladder rung.
 
     Order matters: the observation goes first so the hint opens with something
     that is unmistakably about their screen, not about the problem in general.
     """
     parts = []
-    lead = lead_in(signals)
+    lead = lead_in(signals, seen)
     if lead:
         parts.append(lead)
     if note:

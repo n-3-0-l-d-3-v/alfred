@@ -126,7 +126,13 @@ class HintService:
             else (level, None)
         )
         rung = card.hint_ladder.level(served_level)
-        nudge = personalize.compose(rung, signals, note) if signals else rung
+        # `hints_used` walks the observation list down a rung each time, so the
+        # ladder does not open every step with the same sentence about their code.
+        nudge = (
+            personalize.compose(rung, signals, note, seen=session.hints_used)
+            if signals
+            else rung
+        )
         if signals and not signals.parsed:
             # A broken parse has two very different causes. If the code itself
             # is malformed, say so and point at it — a learner staring at a
