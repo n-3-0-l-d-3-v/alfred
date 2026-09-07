@@ -21,6 +21,7 @@ from .config import get_settings
 from .db import get_db, init_db
 from . import problem_meta
 from .gamification import budget, progress, streaks
+from .health import build_health_payload
 from .mentor import personas
 from .mentor.cards import CardStore
 from .mentor.llm import Mentor
@@ -115,20 +116,15 @@ class FeedbackIn(BaseModel):
 
 
 @app.get("/health")
-def health() -> dict:
-    return {
-        "ok": True,
-        "cards": len(cards),
-        "llm": "online" if mentor.available else "offline",
-        "languages": supported_languages(),
-        "personas": [p["key"] for p in personas.catalog()],
-        # The panel reads these to decide which sign-in buttons to render.
-        "auth": {
-            "github": settings.github_oauth_configured,
-            "dev": settings.dev_auth_enabled,
-            "github_client_id": settings.github_client_id,
-        },
-    }
+def health(db: DbSession = Depends(get_db)) -> dict:
+    return build_health_payload(
+        cards=len(cards),
+        mentor_available=mentor.available,
+        languages=supported_languages(),
+        personas=[p["key"] for p in personas.catalog()],
+        settings=settings,
+        db=db,
+    )
 
 
 @app.post("/auth/github")

@@ -35,6 +35,22 @@ def test_health_needs_no_token(client):
     assert client.get("/health").status_code == 200
 
 
+def test_health_reports_ecosystem_kpis(client):
+    """Fields an external orchestrator (agent.yaml's health_check_command, or
+    the MCP server) reads that the panel does not: version, DB connectivity,
+    whether the optional LLM path is configured, and today's usage vs caps.
+    """
+    body = client.get("/health").json()
+
+    assert body["version"]
+    assert body["db"] == {"connected": True, "error": None}
+    assert body["llm_configured"] is False  # no ALFRED_ANTHROPIC_API_KEY in tests
+    assert set(body["usage_today"]) == {"card", "llm", "llm_review"}
+    assert body["usage_today"]["card"]["cap_per_user"] == 40
+    assert body["usage_today"]["llm"]["cap_per_user"] == 25
+    assert "vault" in body and "configured" in body["vault"]
+
+
 # --- auth --------------------------------------------------------------------
 
 
