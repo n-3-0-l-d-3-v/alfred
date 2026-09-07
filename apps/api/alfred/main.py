@@ -7,6 +7,7 @@ bypass survives only for local work and is off by default.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from datetime import date, timedelta
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,7 +20,7 @@ from .analysis.registry import supported_languages
 from .auth import AuthError, current_user, exchange_github_code, issue_token, upsert_github_user
 from .config import get_settings
 from .db import get_db, init_db
-from . import problem_meta
+from . import problem_meta, vault
 from .gamification import budget, progress, streaks
 from .health import build_health_payload
 from .mentor import personas
@@ -253,6 +254,29 @@ def get_hint(
     return hint.model_dump()
 
 
+def _record_vault_progress(user: User, s: Session, result: dict) -> None:
+    """Vault write-progress: mirror this solve into a Markdown note under
+    VAULT_PATH/Alfred/, in addition to (not instead of) the XpEvent/Streak rows
+    already written by `progress.on_verdict`. No-op if VAULT_PATH is unset.
+    """
+    if not settings.vault_path:
+        return
+    card = cards.get(s.slug)
+    archetype = card.patterns[0].name if card and card.patterns else "general"
+    clean = bool(result.get("clean"))
+    # Simple spaced-repetition schedule: a clean solve earns a longer gap
+    # before review than one that needed hints.
+    next_due = date.today() + timedelta(days=7 if clean else 3)
+    vault.write_progress_note(
+        settings,
+        user_handle=user.handle or user.email,
+        archetype=archetype,
+        streak_days=result.get("streak_current", 0),
+        mastery=1.0 if clean else 0.6,
+        next_due=next_due,
+    )
+
+
 @app.post("/sessions/{session_id}/verdict")
 def submit_verdict(
     session_id: int,
@@ -261,7 +285,10 @@ def submit_verdict(
     db: DbSession = Depends(get_db),
 ) -> dict:
     s = _load_session(session_id, user, db)
-    return progress.on_verdict(db, user, s, body.verdict)
+    result = progress.on_verdict(db, user, s, body.verdict)
+    if result.get("accepted") and result.get("solved") and not result.get("already_solved"):
+        _record_vault_progress(user, s, result)
+    return result
 
 
 @app.post("/sessions/{session_id}/review")

@@ -23,14 +23,16 @@ import warnings
 from functools import lru_cache
 
 from dotenv import dotenv_values
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _LEGACY_ENV_PREFIX = "LEETLEARN_"
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="ALFRED_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="ALFRED_", env_file=".env", extra="ignore", populate_by_name=True
+    )
 
     # --- storage ---
     database_url: str = "sqlite:///./alfred.db"
@@ -73,6 +75,15 @@ class Settings(BaseSettings):
     # Comma-separated. Extension origins are matched by regex in main.py instead,
     # since their ids differ per install; this list is for the web dashboard.
     cors_origins: str = "http://localhost:5173,http://localhost:8000"
+
+    # --- vault integration (optional, ecosystem-wide) ---
+    # Root of the shared Markdown vault other agents in this ecosystem (e.g.
+    # Friday/jarvisOS) also read and write. Unprefixed — VAULT_PATH, not
+    # ALFRED_VAULT_PATH — because it names a location shared across agents,
+    # not an Alfred-specific setting. Unset by default: every vault-touching
+    # function in `vault.py` is then a true no-op (no filesystem access at
+    # all), so Alfred works completely standalone with zero vault configured.
+    vault_path: str | None = Field(default=None, validation_alias="VAULT_PATH")
 
     @property
     def github_oauth_configured(self) -> bool:

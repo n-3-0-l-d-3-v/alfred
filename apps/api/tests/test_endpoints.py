@@ -148,3 +148,33 @@ def test_progress_returns_the_panel_stats_for_a_new_user(client, user):
 
 def test_progress_requires_auth(client):
     assert client.get("/progress").status_code == 401
+
+
+# --- vault write-progress (end-to-end through the verdict endpoint) ----------
+
+
+def test_accepted_verdict_writes_a_vault_progress_note_when_vault_path_is_set(client, user, tmp_path, monkeypatch):
+    import alfred.main as main_mod
+
+    monkeypatch.setattr(main_mod.settings, "vault_path", str(tmp_path))
+
+    sid = client.post("/sessions", json={"slug": "two-sum"}, headers=_auth(user)).json()["session_id"]
+    r = client.post(f"/sessions/{sid}/verdict", json={"verdict": "Accepted"}, headers=_auth(user))
+    assert r.status_code == 200
+
+    written = list((tmp_path / "Alfred").glob("*.md"))
+    assert len(written) == 1
+    text = written[0].read_text(encoding="utf-8")
+    assert "agent: Alfred" in text
+    assert "pattern_archetype:" in text
+
+
+def test_accepted_verdict_writes_nothing_when_vault_path_is_unset(client, user):
+    import alfred.main as main_mod
+
+    assert main_mod.settings.vault_path is None  # default in the test environment
+
+    sid = client.post("/sessions", json={"slug": "two-sum"}, headers=_auth(user)).json()["session_id"]
+    r = client.post(f"/sessions/{sid}/verdict", json={"verdict": "Accepted"}, headers=_auth(user))
+    assert r.status_code == 200
+    assert r.json()["accepted"] is True
