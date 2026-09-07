@@ -6,15 +6,15 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: leetlearn
-      POSTGRES_PASSWORD: leetlearn
-      POSTGRES_DB: leetlearn
+      POSTGRES_USER: alfred
+      POSTGRES_PASSWORD: alfred
+      POSTGRES_DB: alfred
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U leetlearn"]
+      test: ["CMD-SHELL", "pg_isready -U alfred"]
       interval: 5s
       retries: 10
 
@@ -24,10 +24,10 @@ services:
       db:
         condition: service_healthy
     environment:
-      LEETLEARN_DATABASE_URL: postgresql+psycopg://leetlearn:leetlearn@db:5432/leetlearn
+      ALFRED_DATABASE_URL: postgresql+psycopg://alfred:alfred@db:5432/alfred
       # Local-only values. The deployed app gets these from Fly secrets.
-      LEETLEARN_JWT_SECRET: local-development-secret-do-not-use-in-production
-      LEETLEARN_DEV_AUTH_ENABLED: "true"
+      ALFRED_JWT_SECRET: local-development-secret-do-not-use-in-production
+      ALFRED_DEV_AUTH_ENABLED: "true"
     ports:
       - "8000:8000"
 

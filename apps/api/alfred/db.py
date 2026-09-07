@@ -1,10 +1,10 @@
 """Database engine + session factory. SQLite for local dev, Postgres in prod
-(swap `LEETLEARN_DATABASE_URL`).
+(swap `ALFRED_DATABASE_URL`).
 
 Schema management is Alembic. `init_db()` runs `alembic upgrade head` rather
 than `Base.metadata.create_all` — `create_all` only creates tables that don't
 exist yet, it never adds a column to a table that's already there. That is a
-real, reproducible failure mode, not a hypothetical one: a `leetlearn.db` left
+real, reproducible failure mode, not a hypothetical one: a `alfred.db` left
 over from before the `platform` column was added silently keeps its old
 schema forever, and every request that touches `sessions.platform` 500s with
 `no such column: sessions.platform` — which cascades into every downstream
@@ -42,7 +42,7 @@ def init_db() -> None:
     `migrations/env.py` re-reads Settings itself rather than trusting whatever
     URL is on the `Config` object, so the app and `alembic upgrade head` run
     from a terminal are always pointed at the same database. (Tests that need
-    a different target monkeypatch `LEETLEARN_DATABASE_URL` and clear
+    a different target monkeypatch `ALFRED_DATABASE_URL` and clear
     `get_settings`'s cache — see `tests/test_migrations.py` — rather than
     reloading this module, which would corrupt its globals for every test
     that runs afterward in the same process.)

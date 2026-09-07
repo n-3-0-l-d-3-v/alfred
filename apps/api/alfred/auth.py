@@ -32,7 +32,7 @@ from .config import Settings, get_settings
 from .db import get_db
 from .models import User, utcnow
 
-log = logging.getLogger("leetlearn.auth")
+log = logging.getLogger("alfred.auth")
 
 GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
 GITHUB_USER_URL = "https://api.github.com/user"
@@ -58,10 +58,10 @@ def _secret(settings: Settings) -> str:
     if not settings.jwt_secret:
         # Failing closed matters more here than convenience: a default secret
         # would let anyone who reads this file mint tokens for any account.
-        raise AuthError("LEETLEARN_JWT_SECRET is not configured")
+        raise AuthError("ALFRED_JWT_SECRET is not configured")
     if len(settings.jwt_secret.encode()) < MIN_SECRET_BYTES:
         raise AuthError(
-            f"LEETLEARN_JWT_SECRET must be at least {MIN_SECRET_BYTES} bytes "
+            f"ALFRED_JWT_SECRET must be at least {MIN_SECRET_BYTES} bytes "
             "(generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\")"
         )
     return settings.jwt_secret

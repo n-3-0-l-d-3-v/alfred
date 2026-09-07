@@ -1,4 +1,4 @@
-# LeetLearn API
+# Alfred API
 
 FastAPI backend. Runs fully **without an API key** — hints are served from
 pre-generated Problem Cards (a DB/file read), and code review falls back to a
@@ -22,7 +22,7 @@ cd apps/api
 python -m venv .venv
 source .venv/bin/activate         # .venv\Scripts\activate on Windows
 pip install -r requirements.txt
-uvicorn leetlearn.main:app --reload
+uvicorn alfred.main:app --reload
 ```
 
 Open http://127.0.0.1:8000/docs for the interactive API.
@@ -50,10 +50,44 @@ pytest -q
 `tests/test_ac_gate.py` is the load-bearing suite: it proves no solution code
 can reach a learner before a passing submission, through any path.
 
+## Ecosystem agent contract
+
+Alfred is one agent in a personal multi-agent ecosystem (see `agent.yaml` at
+the repo root). Three things exist specifically for an orchestrator, not the
+extension:
+
+- **Health check**: `python -m alfred --health` prints the same JSON as
+  `GET /health` (version, DB connectivity, whether the optional LLM path is
+  configured, today's card/llm usage vs their daily caps) and exits 0/1 — no
+  server needs to be running. `agent.yaml`'s `health_check_command` points here.
+- **MCP server** (`alfred/mcp_server.py`, stdio transport): exposes `get_hint`,
+  `submit_for_ac_gate`, `get_review`, and `get_interview_questions` as MCP
+  tools, so an orchestrator can drive Alfred without the browser extension.
+  Register it with `claude mcp add --transport stdio -s user alfred -- python
+  -m alfred.mcp_server` (run from `apps/api`, with the venv active).
+- **Vault integration** (`alfred/vault.py`, optional): with `VAULT_PATH` set,
+  Alfred reads Markdown notes under `<VAULT_PATH>/Friday/` before generating
+  a personalized hint (folds a matching note into the LLM prompt instead of
+  re-explaining the concept), and writes its own progress notes — streak,
+  mastery, spaced-repetition due date — as Markdown with frontmatter under
+  `<VAULT_PATH>/Alfred/` on every accepted verdict, in addition to the
+  Postgres-backed XP/streak rows. `VAULT_PATH` is unset by default: every
+  function in `vault.py` is then a true no-op with zero filesystem access.
+
+### Personal-token guarantee
+
+The optional LLM path (`ALFRED_ANTHROPIC_API_KEY`, or the legacy
+`LEETLEARN_ANTHROPIC_API_KEY`) is configured exclusively with a key the
+operator supplies themselves — there is no shared or bundled key. An
+unconfigured key does not fail closed or fall back to a pooled key; it makes
+`mentor.llm.Mentor.available` false and every LLM-backed path (personalized
+nudges, deep review, interview-mode generation) degrades to the offline
+card/heuristic path instead, exactly as if no key had ever existed.
+
 ## Layout
 
 ```
-leetlearn/
+alfred/
   config.py          settings + the daily cap limits (the cost fence)
   models.py          SQLAlchemy schema (users, sessions, hint_events, streaks, xp)
   db.py              engine + session factory

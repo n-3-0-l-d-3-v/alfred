@@ -1,7 +1,7 @@
 import pytest
 
-from leetlearn.analysis import analyze
-from leetlearn.mentor.contracts import looks_like_code
+from alfred.analysis import analyze
+from alfred.mentor.contracts import looks_like_code
 
 
 def test_simple_loop():
@@ -161,7 +161,7 @@ def test_mutation_signals_distinguish_counters_from_collections(name):
 
 def test_two_pointer_code_is_not_accused_of_mutating_its_input():
     """The bug this split exists for."""
-    from leetlearn.mentor import misconceptions
+    from alfred.mentor import misconceptions
 
     sig = analyze("python", MUTATION_CASES["counter_only"][0])
     mistakes = " ".join(c["mistake"].lower() for c in misconceptions.derive(sig))
@@ -170,7 +170,7 @@ def test_two_pointer_code_is_not_accused_of_mutating_its_input():
 
 def test_code_that_really_does_mutate_its_input_is_still_caught():
     """The fix must not silence the genuine case."""
-    from leetlearn.mentor import misconceptions
+    from alfred.mentor import misconceptions
 
     sig = analyze("python", MUTATION_CASES["appends_to_iterated"][0])
     mistakes = " ".join(c["mistake"].lower() for c in misconceptions.derive(sig))

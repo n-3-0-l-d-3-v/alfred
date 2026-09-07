@@ -11,10 +11,10 @@ from __future__ import annotations
 
 import pytest
 
-from leetlearn.mentor.cards import CardStore
-from leetlearn.mentor.contracts import looks_like_code
-from leetlearn.mentor.infer import infer
-from leetlearn.mentor.synth import FALLBACK_ARCHETYPE, synthesize
+from alfred.mentor.cards import CardStore
+from alfred.mentor.contracts import looks_like_code
+from alfred.mentor.infer import infer
+from alfred.mentor.synth import FALLBACK_ARCHETYPE, synthesize
 
 PROBLEMS = [
     ("is-subsequence", "392. Is Subsequence", "Easy",

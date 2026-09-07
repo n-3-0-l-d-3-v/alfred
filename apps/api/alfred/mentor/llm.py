@@ -11,11 +11,12 @@ from __future__ import annotations
 
 import logging
 
+from .. import vault
 from ..config import Settings
 from .cards import ProblemCard
 from .contracts import PreACHint
 
-log = logging.getLogger("leetlearn.mentor.llm")
+log = logging.getLogger("alfred.mentor.llm")
 
 _PRE_AC_SYSTEM = (
     "You are a Socratic coding mentor. The learner has NOT solved the problem yet. "
@@ -60,12 +61,26 @@ class Mentor:
         """
         if not self._client:
             return None
+
+        # Vault read-before-explain: if the learner already has notes on this
+        # problem's pattern (VAULT_PATH configured, see ../vault.py), point the
+        # model at them instead of having it re-explain the concept from
+        # scratch. A no-op — zero filesystem access — when VAULT_PATH is unset.
+        concept = " ".join([card.title, *(p.name for p in card.patterns)])
+        notes_context = vault.notes_as_context(vault.find_relevant_notes(self._settings, concept))
+
         user = (
             f"Problem: {card.title} ({card.slug}). "
             f"The learner is stuck at hint level {level}. "
             f"Static analysis of their current code: {signals_summary}. "
             f"Their code:\n{code[:2000]}\n\n"
-            "Give exactly one Socratic nudge that addresses what they seem to be missing. No code."
+            + (
+                f"The learner already has their own notes on related concepts — "
+                f"reference these instead of re-explaining them from scratch:\n{notes_context}\n\n"
+                if notes_context
+                else ""
+            )
+            + "Give exactly one Socratic nudge that addresses what they seem to be missing. No code."
         )
         try:
             resp = self._client.messages.create(

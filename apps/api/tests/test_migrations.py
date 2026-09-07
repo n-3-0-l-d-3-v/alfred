@@ -17,7 +17,7 @@ from alembic.config import Config
 from alembic.migration import MigrationContext
 from sqlalchemy import create_engine
 
-from leetlearn.models import Base
+from alfred.models import Base
 
 API_ROOT = Path(__file__).resolve().parent.parent
 
@@ -25,11 +25,11 @@ API_ROOT = Path(__file__).resolve().parent.parent
 @pytest.fixture
 def migrated_engine(tmp_path, monkeypatch):
     url = f"sqlite:///{tmp_path / 'migrated.db'}"
-    monkeypatch.setenv("LEETLEARN_DATABASE_URL", url)
+    monkeypatch.setenv("ALFRED_DATABASE_URL", url)
 
     # env.py resolves the URL through the cached Settings, so the cache has to
     # be dropped for the monkeypatched env var to take effect.
-    from leetlearn.config import get_settings
+    from alfred.config import get_settings
 
     get_settings.cache_clear()
     try:
@@ -54,7 +54,7 @@ def test_migrations_produce_the_model_schema(migrated_engine):
 
 
 def test_init_db_heals_a_database_stuck_on_an_older_revision(tmp_path, monkeypatch):
-    """Reproduces the exact failure a stale local checkout hits: a `leetlearn.db`
+    """Reproduces the exact failure a stale local checkout hits: a `alfred.db`
     created before the `platform` column existed, still sitting at the initial
     revision, with a server that just started up against it.
 
@@ -71,7 +71,7 @@ def test_init_db_heals_a_database_stuck_on_an_older_revision(tmp_path, monkeypat
     This calls `db.init_db()` itself — not a reimplementation of it — so a
     regression in the real function is what this test would catch. It follows
     the same monkeypatch-env-and-clear-the-settings-cache approach as
-    `migrated_engine` above, and deliberately avoids reloading `leetlearn.db`:
+    `migrated_engine` above, and deliberately avoids reloading `alfred.db`:
     that module's `engine`/`SessionLocal` are shared, live objects other tests
     depend on, and reloading it to retarget them mid-suite is what corrupted
     every test in `test_sessions.py` the first time this test was written.
@@ -79,11 +79,11 @@ def test_init_db_heals_a_database_stuck_on_an_older_revision(tmp_path, monkeypat
     from alembic.command import upgrade
     from alembic.config import Config
 
-    from leetlearn.config import get_settings
-    from leetlearn.db import init_db
+    from alfred.config import get_settings
+    from alfred.db import init_db
 
     url = f"sqlite:///{tmp_path / 'stale.db'}"
-    monkeypatch.setenv("LEETLEARN_DATABASE_URL", url)
+    monkeypatch.setenv("ALFRED_DATABASE_URL", url)
     get_settings.cache_clear()
     try:
         # Stop at the *first* migration only — simulates a checkout from before

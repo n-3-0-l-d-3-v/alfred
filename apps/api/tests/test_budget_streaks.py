@@ -2,9 +2,9 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from leetlearn.gamification import budget, progress, streaks
-from leetlearn.mentor.service import BudgetError
-from leetlearn.models import HintEvent, Session
+from alfred.gamification import budget, progress, streaks
+from alfred.mentor.service import BudgetError
+from alfred.models import HintEvent, Session
 
 
 def _solved_session(db, user, slug="two-sum"):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the LeetLearn icon set — no Pillow, no npm, no design tool.
+"""Generate the Alfred icon set — no Pillow, no npm, no design tool.
 
 The mark is an angular ascending step, cut from a single stroke. It reads as
 both a chevron (code) and a climb (progress) — the product being that hints are

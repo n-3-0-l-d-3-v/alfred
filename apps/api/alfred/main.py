@@ -1,4 +1,4 @@
-"""FastAPI surface for LeetLearn.
+"""FastAPI surface for Alfred.
 
 Auth is GitHub OAuth -> signed JWT (see `auth.py`); the `llt_<user_id>` dev
 bypass survives only for local work and is off by default.
@@ -7,6 +7,7 @@ bypass survives only for local work and is off by default.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from datetime import date, timedelta
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,8 +20,9 @@ from .analysis.registry import supported_languages
 from .auth import AuthError, current_user, exchange_github_code, issue_token, upsert_github_user
 from .config import get_settings
 from .db import get_db, init_db
-from . import problem_meta
+from . import problem_meta, vault
 from .gamification import budget, progress, streaks
+from .health import build_health_payload
 from .mentor import personas
 from .mentor.cards import CardStore
 from .mentor.llm import Mentor
@@ -41,7 +43,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="LeetLearn API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Alfred API", version="0.1.0", lifespan=lifespan)
 
 # The extension panel is an extension-origin page calling a different host, so
 # it needs CORS. Origins are explicit rather than "*" — an allow-all API that
@@ -115,25 +117,20 @@ class FeedbackIn(BaseModel):
 
 
 @app.get("/health")
-def health() -> dict:
-    return {
-        "ok": True,
-        "cards": len(cards),
-        "llm": "online" if mentor.available else "offline",
-        "languages": supported_languages(),
-        "personas": [p["key"] for p in personas.catalog()],
-        # The panel reads these to decide which sign-in buttons to render.
-        "auth": {
-            "github": settings.github_oauth_configured,
-            "dev": settings.dev_auth_enabled,
-            "github_client_id": settings.github_client_id,
-        },
-    }
+def health(db: DbSession = Depends(get_db)) -> dict:
+    return build_health_payload(
+        cards=len(cards),
+        mentor_available=mentor.available,
+        languages=supported_languages(),
+        personas=[p["key"] for p in personas.catalog()],
+        settings=settings,
+        db=db,
+    )
 
 
 @app.post("/auth/github")
 async def github_login(body: GithubLogin, db: DbSession = Depends(get_db)) -> dict:
-    """Exchange a GitHub OAuth code for a LeetLearn JWT."""
+    """Exchange a GitHub OAuth code for a Alfred JWT."""
     try:
         profile = await exchange_github_code(body.code, body.redirect_uri, settings)
         user = upsert_github_user(db, profile)
@@ -257,6 +254,29 @@ def get_hint(
     return hint.model_dump()
 
 
+def _record_vault_progress(user: User, s: Session, result: dict) -> None:
+    """Vault write-progress: mirror this solve into a Markdown note under
+    VAULT_PATH/Alfred/, in addition to (not instead of) the XpEvent/Streak rows
+    already written by `progress.on_verdict`. No-op if VAULT_PATH is unset.
+    """
+    if not settings.vault_path:
+        return
+    card = cards.get(s.slug)
+    archetype = card.patterns[0].name if card and card.patterns else "general"
+    clean = bool(result.get("clean"))
+    # Simple spaced-repetition schedule: a clean solve earns a longer gap
+    # before review than one that needed hints.
+    next_due = date.today() + timedelta(days=7 if clean else 3)
+    vault.write_progress_note(
+        settings,
+        user_handle=user.handle or user.email,
+        archetype=archetype,
+        streak_days=result.get("streak_current", 0),
+        mastery=1.0 if clean else 0.6,
+        next_due=next_due,
+    )
+
+
 @app.post("/sessions/{session_id}/verdict")
 def submit_verdict(
     session_id: int,
@@ -265,7 +285,10 @@ def submit_verdict(
     db: DbSession = Depends(get_db),
 ) -> dict:
     s = _load_session(session_id, user, db)
-    return progress.on_verdict(db, user, s, body.verdict)
+    result = progress.on_verdict(db, user, s, body.verdict)
+    if result.get("accepted") and result.get("solved") and not result.get("already_solved"):
+        _record_vault_progress(user, s, result)
+    return result
 
 
 @app.post("/sessions/{session_id}/review")

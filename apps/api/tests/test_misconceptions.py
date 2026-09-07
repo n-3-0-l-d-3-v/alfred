@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import pytest
 
-from leetlearn.analysis import analyze
-from leetlearn.mentor import misconceptions
-from leetlearn.mentor.contracts import looks_like_code
+from alfred.analysis import analyze
+from alfred.mentor import misconceptions
+from alfred.mentor.contracts import looks_like_code
 
 CODE = {
     "brute_force": "def f(nums, t):\n"
@@ -117,7 +117,7 @@ def test_the_gallery_is_capped():
 def test_derived_cases_lead_the_review_gallery(db, user, service):
     """Ordering is the point: a reader should see their own bug before a list of
     other people's."""
-    from leetlearn.models import Session, utcnow
+    from alfred.models import Session, utcnow
 
     s = Session(user_id=user.id, slug="two-sum", language="python")
     s.solved_at = utcnow()
@@ -130,7 +130,7 @@ def test_derived_cases_lead_the_review_gallery(db, user, service):
 
 def test_the_gallery_does_not_repeat_a_mistake(db, user, service):
     """An archetype and the code will often name the same trap."""
-    from leetlearn.models import Session, utcnow
+    from alfred.models import Session, utcnow
 
     s = Session(user_id=user.id, slug="two-sum", language="python")
     s.solved_at = utcnow()

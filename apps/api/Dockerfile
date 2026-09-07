@@ -13,14 +13,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY alembic.ini .
 COPY migrations/ ./migrations/
-COPY leetlearn/ ./leetlearn/
+COPY alfred/ ./alfred/
 
 # Non-root: nothing here needs to write outside the image.
-RUN useradd --create-home --uid 10001 leetlearn
-USER leetlearn
+RUN useradd --create-home --uid 10001 alfred
+USER alfred
 
 EXPOSE 8000
 
 # Migrations run at boot so a deploy can never serve a schema older than its
 # code. `upgrade head` is a no-op when the database is already current.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn leetlearn.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn alfred.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

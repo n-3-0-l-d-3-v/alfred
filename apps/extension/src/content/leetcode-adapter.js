@@ -23,7 +23,7 @@
  *      "guessed from markup".
  *
  * Run `LL.adapter.selfTest()` in the console on a problem page — select the
- * LeetLearn context in the console's dropdown first — to see what still works.
+ * Alfred context in the console's dropdown first — to see what still works.
  */
 globalThis.LL = globalThis.LL || {};
 

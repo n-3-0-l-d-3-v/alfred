@@ -7,7 +7,7 @@ twice on one problem lands on *one* session row.
 
 from __future__ import annotations
 
-from leetlearn.models import Session
+from alfred.models import Session
 
 
 def _auth(user):

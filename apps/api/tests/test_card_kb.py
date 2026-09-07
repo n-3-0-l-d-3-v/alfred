@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import pytest
 
-from leetlearn.mentor.cards import CardStore
-from leetlearn.mentor.contracts import looks_like_code
+from alfred.mentor.cards import CardStore
+from alfred.mentor.contracts import looks_like_code
 
 
 @pytest.fixture(scope="module")

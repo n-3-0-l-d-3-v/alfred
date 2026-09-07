@@ -32,7 +32,7 @@ LL.api = (function () {
         body: body ? JSON.stringify(body) : null,
       });
     } catch (e) {
-      const err = new Error(`Can't reach the LeetLearn server. Is it running? (${e.message})`);
+      const err = new Error(`Can't reach the Alfred server. Is it running? (${e.message})`);
       // Flagged rather than string-matched: the panel renders this as a
       // retryable state with the configured address, not as a failure of the
       // feature the learner happened to click.

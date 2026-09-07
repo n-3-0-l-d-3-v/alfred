@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from leetlearn.mentor.examples import Example, concrete_trigger, parse
+from alfred.mentor.examples import Example, concrete_trigger, parse
 
 IS_SUBSEQUENCE = (
     'Given two strings s and t, return true if s is a subsequence of t. '
@@ -108,8 +108,8 @@ def test_every_parsed_example_is_usable(statement):
 
 
 def test_examples_reach_the_review(db, user, service):
-    from leetlearn.models import Session, utcnow
-    from leetlearn import problem_meta
+    from alfred.models import Session, utcnow
+    from alfred import problem_meta
 
     problem_meta.remember(db, platform="leetcode", slug="two-sum", statement=TWO_SUM)
     s = Session(user_id=user.id, slug="two-sum", language="python")
@@ -126,7 +126,7 @@ def test_examples_reach_the_review(db, user, service):
 
 def test_a_statement_we_never_stored_still_reviews(db, user, service):
     """Examples are an enrichment, never a requirement."""
-    from leetlearn.models import Session, utcnow
+    from alfred.models import Session, utcnow
 
     s = Session(user_id=user.id, slug="two-sum", language="python")
     s.solved_at = utcnow()

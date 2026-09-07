@@ -1,0 +1,33 @@
+name: Alfred
+role: learning-and-upskilling
+default_sensitivity_tier: personal-token
+entrypoint: python -m alfred                # run from apps/api, with .venv active
+health_check_command: python -m alfred --health   # run from apps/api; prints JSON, exit 0 = healthy
+vault_write_path: vault/Alfred/
+sandboxed: false
+
+# --- notes for the orchestrator --------------------------------------------
+#
+# working_directory: apps/api  (entrypoint and health_check_command are run
+#   from there so `python -m alfred` resolves the local package; they are not
+#   installed console scripts).
+#
+# mcp_server: apps/api/alfred/mcp_server.py — stdio transport, exposes
+#   get_hint, submit_for_ac_gate, get_review, get_interview_questions.
+#   Launch: python -m alfred.mcp_server (from apps/api).
+#
+# personal-token guarantee: the optional LLM path (Anthropic API calls for
+# personalized hints, deep review, interview-mode generation) is configured
+# exclusively via the operator's own ALFRED_ANTHROPIC_API_KEY (or the legacy
+# LEETLEARN_ANTHROPIC_API_KEY) env var. There is no shared or bundled key —
+# an unconfigured key means every LLM-backed path degrades to the offline
+# card/heuristic path rather than falling back to a pooled key. See
+# apps/api/README.md "Personal-token guarantee" and alfred/mentor/llm.py.
+#
+# vault_path: optional VAULT_PATH env var (default unset = no-op). When set,
+# Alfred reads Markdown notes under <VAULT_PATH>/Friday/ (or wherever the
+# ecosystem's shared notes vault lives) before generating an explanation, and
+# writes its own progress notes (streaks, per-archetype mastery,
+# spaced-repetition due dates) as Markdown with frontmatter under
+# <VAULT_PATH>/Alfred/ — in addition to, not instead of, the Postgres-backed
+# progress tracking. See alfred/vault.py.

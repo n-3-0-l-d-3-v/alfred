@@ -7,7 +7,7 @@ route can be broken in all four of those ways while every unit test passes.
 
 from __future__ import annotations
 
-from leetlearn.models import CardFeedback
+from alfred.models import CardFeedback
 
 
 def _auth(user):
@@ -33,6 +33,22 @@ def test_health_reports_what_the_panel_branches_on(client):
 
 def test_health_needs_no_token(client):
     assert client.get("/health").status_code == 200
+
+
+def test_health_reports_ecosystem_kpis(client):
+    """Fields an external orchestrator (agent.yaml's health_check_command, or
+    the MCP server) reads that the panel does not: version, DB connectivity,
+    whether the optional LLM path is configured, and today's usage vs caps.
+    """
+    body = client.get("/health").json()
+
+    assert body["version"]
+    assert body["db"] == {"connected": True, "error": None}
+    assert body["llm_configured"] is False  # no ALFRED_ANTHROPIC_API_KEY in tests
+    assert set(body["usage_today"]) == {"card", "llm", "llm_review"}
+    assert body["usage_today"]["card"]["cap_per_user"] == 40
+    assert body["usage_today"]["llm"]["cap_per_user"] == 25
+    assert "vault" in body and "configured" in body["vault"]
 
 
 # --- auth --------------------------------------------------------------------
@@ -132,3 +148,33 @@ def test_progress_returns_the_panel_stats_for_a_new_user(client, user):
 
 def test_progress_requires_auth(client):
     assert client.get("/progress").status_code == 401
+
+
+# --- vault write-progress (end-to-end through the verdict endpoint) ----------
+
+
+def test_accepted_verdict_writes_a_vault_progress_note_when_vault_path_is_set(client, user, tmp_path, monkeypatch):
+    import alfred.main as main_mod
+
+    monkeypatch.setattr(main_mod.settings, "vault_path", str(tmp_path))
+
+    sid = client.post("/sessions", json={"slug": "two-sum"}, headers=_auth(user)).json()["session_id"]
+    r = client.post(f"/sessions/{sid}/verdict", json={"verdict": "Accepted"}, headers=_auth(user))
+    assert r.status_code == 200
+
+    written = list((tmp_path / "Alfred").glob("*.md"))
+    assert len(written) == 1
+    text = written[0].read_text(encoding="utf-8")
+    assert "agent: Alfred" in text
+    assert "pattern_archetype:" in text
+
+
+def test_accepted_verdict_writes_nothing_when_vault_path_is_unset(client, user):
+    import alfred.main as main_mod
+
+    assert main_mod.settings.vault_path is None  # default in the test environment
+
+    sid = client.post("/sessions", json={"slug": "two-sum"}, headers=_auth(user)).json()["session_id"]
+    r = client.post(f"/sessions/{sid}/verdict", json={"verdict": "Accepted"}, headers=_auth(user))
+    assert r.status_code == 200
+    assert r.json()["accepted"] is True

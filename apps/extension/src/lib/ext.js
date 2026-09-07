@@ -39,7 +39,7 @@ LL.identity = {
       "https://github.com/login/oauth/authorize" +
       `?client_id=${encodeURIComponent(clientId)}` +
       `&redirect_uri=${encodeURIComponent(this.redirectUri())}` +
-      // Identity only. LeetLearn never reads or writes a user's repositories,
+      // Identity only. Alfred never reads or writes a user's repositories,
       // so it asks for no scopes beyond the implicit public profile.
       "&scope=read:user%20user:email" +
       `&state=${crypto.randomUUID()}`;
