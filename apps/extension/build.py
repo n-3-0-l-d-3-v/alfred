@@ -107,7 +107,7 @@ def build(browser: str, manifest_name: str, make_zip: bool) -> list[str]:
     problems = [f"{browser}: missing required file '{r}'" for r in missing]
 
     if make_zip:
-        zpath = DIST / f"leetlearn-{browser}.zip"
+        zpath = DIST / f"alfred-{browser}.zip"
         with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
             for p in out.rglob("*"):
                 if p.is_file():

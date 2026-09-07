@@ -1,4 +1,4 @@
-# LeetLearn API
+# Alfred API
 
 FastAPI backend. Runs fully **without an API key** — hints are served from
 pre-generated Problem Cards (a DB/file read), and code review falls back to a
@@ -22,7 +22,7 @@ cd apps/api
 python -m venv .venv
 source .venv/bin/activate         # .venv\Scripts\activate on Windows
 pip install -r requirements.txt
-uvicorn leetlearn.main:app --reload
+uvicorn alfred.main:app --reload
 ```
 
 Open http://127.0.0.1:8000/docs for the interactive API.
@@ -53,7 +53,7 @@ can reach a learner before a passing submission, through any path.
 ## Layout
 
 ```
-leetlearn/
+alfred/
   config.py          settings + the daily cap limits (the cost fence)
   models.py          SQLAlchemy schema (users, sessions, hint_events, streaks, xp)
   db.py              engine + session factory

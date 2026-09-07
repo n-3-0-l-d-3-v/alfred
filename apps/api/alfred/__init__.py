@@ -1,4 +1,4 @@
-"""LeetLearn API — a Duolingo-for-LeetCode coding mentor.
+"""Alfred API — a Duolingo-for-LeetCode coding mentor.
 
 The design rule that governs this whole package: the **AC gate**. Before a
 passing submission the mentor is Socratic-only and structurally cannot emit

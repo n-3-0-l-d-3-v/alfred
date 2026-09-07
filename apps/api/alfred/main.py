@@ -1,4 +1,4 @@
-"""FastAPI surface for LeetLearn.
+"""FastAPI surface for Alfred.
 
 Auth is GitHub OAuth -> signed JWT (see `auth.py`); the `llt_<user_id>` dev
 bypass survives only for local work and is off by default.
@@ -41,7 +41,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="LeetLearn API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Alfred API", version="0.1.0", lifespan=lifespan)
 
 # The extension panel is an extension-origin page calling a different host, so
 # it needs CORS. Origins are explicit rather than "*" — an allow-all API that
@@ -133,7 +133,7 @@ def health() -> dict:
 
 @app.post("/auth/github")
 async def github_login(body: GithubLogin, db: DbSession = Depends(get_db)) -> dict:
-    """Exchange a GitHub OAuth code for a LeetLearn JWT."""
+    """Exchange a GitHub OAuth code for a Alfred JWT."""
     try:
         profile = await exchange_github_code(body.code, body.redirect_uri, settings)
         user = upsert_github_user(db, profile)

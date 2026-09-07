@@ -44,7 +44,7 @@
     }
     if (e?.offline) {
       $(el).innerHTML =
-        `<p class="error">Can't reach the LeetLearn server.</p>
+        `<p class="error">Can't reach the Alfred server.</p>
          <p class="muted small">The panel is pointed at <code>${esc(apiBaseShown)}</code>.
             Start the API and press retry — nothing is lost.</p>
          <button id="retryBoot" class="primary">Retry</button>`;

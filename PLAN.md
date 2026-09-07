@@ -1,4 +1,4 @@
-# LeetLearn — Architecture & Development Plan
+# Alfred — Architecture & Development Plan
 
 > Status as of 2026-07-22. Working dir `Desktop/Neil/leetLearn` is empty; the prior
 > work lives in `Desktop/Neil/codeReview` (git repo, branch `master`, 3 commits).
@@ -56,7 +56,7 @@ test harness.** Don't try to grow the current repo into the product; start clean
 ## 2. Product thesis, and the one rule that makes it work
 
 The pitch: LeetCode gives you almost no support; YouTube drops you into tutorial
-hell; AI tools hand you the answer. LeetLearn sits *between* — it makes you solve it
+hell; AI tools hand you the answer. Alfred sits *between* — it makes you solve it
 yourself, then teaches you everything around the solution once you have.
 
 The hard problem is not generating hints. It's **integrity of the hint ladder**. If
@@ -361,7 +361,7 @@ This is where it becomes a product you personally use every day.
 - **The AC gate**, enforced server-side: `session.solved_at IS NULL` → Socratic schema only
 - Hint budget + escalation logging
 - Stuck detector v1: idle >8min, or 3 failed submissions, or delete-retype cycling → nudge
-- **Exit:** you solve 20 problems using only LeetLearn — no ChatGPT, no editorial — and
+- **Exit:** you solve 20 problems using only Alfred — no ChatGPT, no editorial — and
   the hint ladder gets you unstuck without ever handing you the answer.
 
 ### Phase 3 — Progression (2–3 weeks)

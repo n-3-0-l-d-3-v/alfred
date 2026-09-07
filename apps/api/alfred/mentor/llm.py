@@ -15,7 +15,7 @@ from ..config import Settings
 from .cards import ProblemCard
 from .contracts import PreACHint
 
-log = logging.getLogger("leetlearn.mentor.llm")
+log = logging.getLogger("alfred.mentor.llm")
 
 _PRE_AC_SYSTEM = (
     "You are a Socratic coding mentor. The learner has NOT solved the problem yet. "

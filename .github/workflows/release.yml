@@ -38,16 +38,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            apps/extension/dist/leetlearn-chrome.zip
-            apps/extension/dist/leetlearn-firefox.zip
+            apps/extension/dist/alfred-chrome.zip
+            apps/extension/dist/alfred-firefox.zip
           body: |
             **Chrome / Edge / Brave (any Chromium browser):**
-            1. Download `leetlearn-chrome.zip` below and unzip it.
+            1. Download `alfred-chrome.zip` below and unzip it.
             2. Go to `chrome://extensions`, turn on *Developer mode* (top right).
             3. Click *Load unpacked* and select the unzipped folder.
 
             **Firefox:**
-            1. Download `leetlearn-firefox.zip` below and unzip it.
+            1. Download `alfred-firefox.zip` below and unzip it.
             2. Go to `about:debugging#/runtime/this-firefox`.
             3. Click *Load Temporary Add-on* and select `manifest.json` inside the unzipped folder.
                (Firefox unloads temporary add-ons on restart — that's a Firefox

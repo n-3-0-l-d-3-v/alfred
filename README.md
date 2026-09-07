@@ -1,4 +1,4 @@
-# LeetLearn
+# Alfred
 
 A Duolingo-for-LeetCode coding mentor. It makes you solve the problem yourself
 with a Socratic hint ladder, then — *only after you pass* — opens the full
@@ -35,12 +35,12 @@ Set two env vars (a `.env` in `apps/api/` works) — the server fails closed
 without them, by design:
 
 ```bash
-LEETLEARN_JWT_SECRET=<python -c "import secrets; print(secrets.token_urlsafe(32))">
-LEETLEARN_DEV_AUTH_ENABLED=true
+ALFRED_JWT_SECRET=<python -c "import secrets; print(secrets.token_urlsafe(32))">
+ALFRED_DEV_AUTH_ENABLED=true
 ```
 
 ```bash
-cd apps/api && pytest -q && alembic upgrade head && uvicorn leetlearn.main:app --reload
+cd apps/api && pytest -q && alembic upgrade head && uvicorn alfred.main:app --reload
 ```
 
 ```bash
@@ -48,8 +48,8 @@ cd apps/extension && python build.py
 ```
 
 For GitHub sign-in, register an OAuth app whose callback is the value of
-`chrome.identity.getRedirectURL()` and set `LEETLEARN_GITHUB_CLIENT_ID` /
-`LEETLEARN_GITHUB_CLIENT_SECRET`. Postgres locally: `docker compose up`.
+`chrome.identity.getRedirectURL()` and set `ALFRED_GITHUB_CLIENT_ID` /
+`ALFRED_GITHUB_CLIENT_SECRET`. Postgres locally: `docker compose up`.
 
 Then load `apps/extension/dist/chrome` (or `dist/firefox`) — see
 [apps/extension/README.md](apps/extension/README.md).
@@ -98,7 +98,7 @@ apps/
   PLAN.md budgeted a one-time ~$166 batch job for the catalog; the archetype
   engine replaced it, because the teaching content for a problem is mostly a
   property of its pattern rather than the problem.
-- **Daily caps** in `apps/api/leetlearn/config.py` bound the worst case if the
+- **Daily caps** in `apps/api/alfred/config.py` bound the worst case if the
   optional LLM path is ever switched on: 40 card hints/day, 25 model calls/day.
 
 Track `hint_events.source` (`card` vs `llm`) — it's the KPI that governs unit economics.

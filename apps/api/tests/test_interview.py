@@ -10,11 +10,11 @@ from __future__ import annotations
 
 import pytest
 
-from leetlearn.analysis import analyze
-from leetlearn.mentor import probes
-from leetlearn.mentor.cards import CardStore
-from leetlearn.mentor.service import HintGateError
-from leetlearn.models import Session, utcnow
+from alfred.analysis import analyze
+from alfred.mentor import probes
+from alfred.mentor.cards import CardStore
+from alfred.mentor.service import HintGateError
+from alfred.models import Session, utcnow
 
 HASH_MAP = (
     "def twoSum(nums, target):\n"

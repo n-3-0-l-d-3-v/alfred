@@ -11,9 +11,9 @@ from datetime import timedelta
 import jwt
 import pytest
 
-from leetlearn.auth import AuthError, decode_token, issue_token, upsert_github_user
-from leetlearn.config import Settings
-from leetlearn.models import User, utcnow
+from alfred.auth import AuthError, decode_token, issue_token, upsert_github_user
+from alfred.config import Settings
+from alfred.models import User, utcnow
 
 SETTINGS = Settings(jwt_secret="unit-test-secret-that-is-long-enough-for-hs256", dev_auth_enabled=False)
 
@@ -106,7 +106,7 @@ def test_dev_token_is_refused_when_dev_auth_is_disabled(client, user, monkeypatc
 
     With the bypass off, presenting one must fail even though the user exists.
     """
-    from leetlearn import auth
+    from alfred import auth
 
     monkeypatch.setattr(auth, "get_settings", lambda: SETTINGS)
     r = client.get("/me", headers={"Authorization": f"Bearer llt_{user.id}"})
@@ -124,7 +124,7 @@ def test_missing_authorization_header_is_refused(client):
 
 
 def test_jwt_authenticates_against_a_live_endpoint(client, db, user):
-    from leetlearn import auth
+    from alfred import auth
 
     token = issue_token(user, SETTINGS)
     # The dependency reads settings at request time, so point it at the same

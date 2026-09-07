@@ -6,19 +6,19 @@ import os
 # call wins). Dev auth is off by default in the app so a misconfigured
 # deployment fails closed; the suite drives endpoints with `llt_` tokens and
 # opts back in here deliberately.
-os.environ.setdefault("LEETLEARN_DEV_AUTH_ENABLED", "true")
-os.environ.setdefault("LEETLEARN_JWT_SECRET", "test-secret-not-used-in-prod-long-enough-for-hs256")
+os.environ.setdefault("ALFRED_DEV_AUTH_ENABLED", "true")
+os.environ.setdefault("ALFRED_JWT_SECRET", "test-secret-not-used-in-prod-long-enough-for-hs256")
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from leetlearn.mentor.cards import CardStore
-from leetlearn.mentor.llm import Mentor
-from leetlearn.mentor.service import HintService
-from leetlearn.models import Base, User
-from leetlearn.config import Settings
+from alfred.mentor.cards import CardStore
+from alfred.mentor.llm import Mentor
+from alfred.mentor.service import HintService
+from alfred.models import Base, User
+from alfred.config import Settings
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def db():
 
 @pytest.fixture
 def user(db):
-    u = User(email="dev@leetlearn.test", handle="dev")
+    u = User(email="dev@alfred.test", handle="dev")
     db.add(u)
     db.commit()
     return u
@@ -69,8 +69,8 @@ def client(db):
     """
     from fastapi.testclient import TestClient
 
-    from leetlearn.db import get_db
-    from leetlearn.main import app
+    from alfred.db import get_db
+    from alfred.main import app
 
     app.dependency_overrides[get_db] = lambda: db
     try:

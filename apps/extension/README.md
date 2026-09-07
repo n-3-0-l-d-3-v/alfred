@@ -1,4 +1,4 @@
-# LeetLearn Extension (Chrome + Firefox)
+# Alfred Extension (Chrome + Firefox)
 
 One source tree, two builds. **No Node or npm toolchain is required to build** —
 `build.py` does the assembly. (Node is only used to *run the tests*, and even
@@ -26,7 +26,7 @@ select `apps/extension/dist/firefox/manifest.json`.
 > Firefox loads temporary add-ons only until you restart the browser. That's
 > normal for unsigned development builds.
 
-Start the backend first (`cd apps/api && uvicorn leetlearn.main:app --reload`),
+Start the backend first (`cd apps/api && uvicorn alfred.main:app --reload`),
 then open a LeetCode problem and open the side panel (Chrome) or sidebar (Firefox).
 
 ### Firefox permission gotcha

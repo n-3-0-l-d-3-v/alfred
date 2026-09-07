@@ -59,5 +59,5 @@
   }, 1000);
 
   const active = adapter();
-  console.debug("[LeetLearn] content script ready —", active ? active.id : "no adapter", location.href);
+  console.debug("[Alfred] content script ready —", active ? active.id : "no adapter", location.href);
 })();

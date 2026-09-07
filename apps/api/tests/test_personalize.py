@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import pytest
 
-from leetlearn.analysis import analyze
-from leetlearn.mentor import personalize
-from leetlearn.mentor.contracts import looks_like_code
+from alfred.analysis import analyze
+from alfred.mentor import personalize
+from alfred.mentor.contracts import looks_like_code
 
 SAMPLES = {
     "brute_force": "def f(nums, t):\n"

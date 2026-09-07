@@ -7,7 +7,7 @@ route can be broken in all four of those ways while every unit test passes.
 
 from __future__ import annotations
 
-from leetlearn.models import CardFeedback
+from alfred.models import CardFeedback
 
 
 def _auth(user):

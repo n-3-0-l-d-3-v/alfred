@@ -7,11 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from leetlearn.mentor.cards import CardStore, ProblemCard
-from leetlearn.mentor.contracts import PreACHint, looks_like_code
-from leetlearn.mentor.service import FULL_SOLUTION_LEVEL, HintGateError
-from leetlearn.gamification import progress
-from leetlearn.models import Session
+from alfred.mentor.cards import CardStore, ProblemCard
+from alfred.mentor.contracts import PreACHint, looks_like_code
+from alfred.mentor.service import FULL_SOLUTION_LEVEL, HintGateError
+from alfred.gamification import progress
+from alfred.models import Session
 
 
 def _session(user, slug="two-sum", solved=False):

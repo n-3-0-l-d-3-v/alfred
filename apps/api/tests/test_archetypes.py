@@ -12,11 +12,11 @@ import re
 
 import pytest
 
-from leetlearn.mentor import archetype_library  # noqa: F401  (registers the library)
-from leetlearn.mentor import archetypes
-from leetlearn.mentor.card_builder import Spec, build, build_all
-from leetlearn.mentor.cards import CardStore
-from leetlearn.mentor.contracts import looks_like_code
+from alfred.mentor import archetype_library  # noqa: F401  (registers the library)
+from alfred.mentor import archetypes
+from alfred.mentor.card_builder import Spec, build, build_all
+from alfred.mentor.cards import CardStore
+from alfred.mentor.contracts import looks_like_code
 
 # Deliberately code-shaped substitutions. If a template can be pushed into
 # looking like code by its nouns, this is what finds it.

@@ -3,11 +3,11 @@ personas, the failure gallery, and meme tone-gating."""
 
 import pytest
 
-from leetlearn.analysis import analyze
-from leetlearn.analysis.registry import supported_languages
-from leetlearn.mentor import personas, reactions
-from leetlearn.gamification import progress
-from leetlearn.models import Session, utcnow
+from alfred.analysis import analyze
+from alfred.analysis.registry import supported_languages
+from alfred.mentor import personas, reactions
+from alfred.gamification import progress
+from alfred.models import Session, utcnow
 
 
 def _solved(db, user, slug="two-sum", hints=0):
@@ -232,7 +232,7 @@ UNGRADED_SLUG = "some-unauthored-problem"
 
 
 def _ungraded_session(db, user):
-    from leetlearn.mentor.cards import CardStore
+    from alfred.mentor.cards import CardStore
     s = Session(user_id=user.id, slug=UNGRADED_SLUG, language="python", hints_used=0)
     s.solved_at = utcnow()
     db.add(s)

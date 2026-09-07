@@ -2,13 +2,13 @@
 # volume, so this app holds no state and can scale to zero between sessions.
 #
 # One-time setup:
-#   fly launch --no-deploy --name leetlearn-api
-#   fly secrets set LEETLEARN_DATABASE_URL="postgresql+psycopg://...neon.tech/leetlearn?sslmode=require"
-#   fly secrets set LEETLEARN_JWT_SECRET="$(python -c 'import secrets;print(secrets.token_urlsafe(32))')"
-#   fly secrets set LEETLEARN_GITHUB_CLIENT_ID=... LEETLEARN_GITHUB_CLIENT_SECRET=...
+#   fly launch --no-deploy --name alfred-api
+#   fly secrets set ALFRED_DATABASE_URL="postgresql+psycopg://...neon.tech/alfred?sslmode=require"
+#   fly secrets set ALFRED_JWT_SECRET="$(python -c 'import secrets;print(secrets.token_urlsafe(32))')"
+#   fly secrets set ALFRED_GITHUB_CLIENT_ID=... ALFRED_GITHUB_CLIENT_SECRET=...
 #   fly deploy
 
-app = "leetlearn-api"
+app = "alfred-api"
 primary_region = "sin"
 
 [build]
@@ -17,7 +17,7 @@ primary_region = "sin"
 [env]
   PORT = "8000"
   # Never enable the dev bypass here — it accepts any user id as identity.
-  LEETLEARN_DEV_AUTH_ENABLED = "false"
+  ALFRED_DEV_AUTH_ENABLED = "false"
 
 [http_service]
   internal_port = 8000

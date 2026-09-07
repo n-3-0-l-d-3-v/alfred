@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from leetlearn.mentor.infer import MIN_CONFIDENCE, infer
+from alfred.mentor.infer import MIN_CONFIDENCE, infer
 
 # (title, topic tags, statement fragment, expected archetype)
 KNOWN = [
@@ -111,7 +111,7 @@ def test_code_signals_never_outvote_the_statement():
     """Someone brute-forcing Two Sum with nested loops and no hash map must still
     be taught the hash-lookup pattern. Their code is evidence about where they
     are stuck, not about what the problem is."""
-    from leetlearn.analysis import analyze
+    from alfred.analysis import analyze
 
     brute = analyze("python", "def f(n,t):\n    for i in range(len(n)):\n        for j in range(i+1,len(n)):\n            if n[i]+n[j]==t: return [i,j]\n")
     got = infer("1. Two Sum", ["array", "hash-table"],
