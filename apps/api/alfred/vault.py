@@ -29,7 +29,7 @@ from pathlib import Path
 from .config import Settings
 
 READ_SUBDIR = "Friday"
-WRITE_SUBDIR = "Alfred"
+WRITE_SUBDIR = "agents/Alfred"
 
 _WORD_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9_-]{2,}")
 
@@ -59,7 +59,12 @@ def find_relevant_notes(settings: Settings, concept: str, *, limit: int = 3) -> 
     root = _vault_root(settings)
     if root is None:
         return []
+    # Prefer a dedicated <vault>/Friday/ folder; otherwise the whole vault
+    # (the shared devNote vault keeps Friday's notes in topic folders),
+    # excluding every agent's own output under agents/.
     read_dir = root / READ_SUBDIR
+    if not read_dir.is_dir():
+        read_dir = root
     if not read_dir.is_dir():
         return []
 
@@ -71,6 +76,8 @@ def find_relevant_notes(settings: Settings, concept: str, *, limit: int = 3) -> 
 
     matches: list[VaultNote] = []
     for md_path in sorted(read_dir.rglob("*.md")):
+        if "agents" in md_path.relative_to(root).parts or ".git" in md_path.parts:
+            continue
         try:
             text = md_path.read_text(encoding="utf-8")
         except OSError:

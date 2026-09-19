@@ -162,7 +162,7 @@ def test_accepted_verdict_writes_a_vault_progress_note_when_vault_path_is_set(cl
     r = client.post(f"/sessions/{sid}/verdict", json={"verdict": "Accepted"}, headers=_auth(user))
     assert r.status_code == 200
 
-    written = list((tmp_path / "Alfred").glob("*.md"))
+    written = list((tmp_path / "agents" / "Alfred").glob("*.md"))
     assert len(written) == 1
     text = written[0].read_text(encoding="utf-8")
     assert "agent: Alfred" in text
