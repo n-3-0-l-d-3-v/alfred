@@ -3,7 +3,7 @@ role: learning-and-upskilling
 default_sensitivity_tier: personal-token
 entrypoint: python -m alfred                # run from apps/api, with .venv active
 health_check_command: python -m alfred --health   # run from apps/api; prints JSON, exit 0 = healthy
-vault_write_path: agents/Alfred/ (under $VAULT_PATH)
+vault_write_path: agents/Alfred/
 sandboxed: false
 
 # --- notes for the orchestrator --------------------------------------------

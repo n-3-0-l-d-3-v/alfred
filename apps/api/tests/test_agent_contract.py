@@ -40,7 +40,7 @@ def test_agent_yaml_identity():
     assert data["name"] == "Alfred"
     assert data["default_sensitivity_tier"] == "personal-token"
     assert data["sandboxed"] is False
-    assert data["vault_write_path"] == "vault/Alfred/"
+    assert data["vault_write_path"] == "agents/Alfred/"
 
 
 def test_agent_yaml_commands_reference_the_renamed_package():

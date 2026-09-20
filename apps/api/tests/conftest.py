@@ -9,6 +9,10 @@ import os
 os.environ.setdefault("ALFRED_DEV_AUTH_ENABLED", "true")
 os.environ.setdefault("ALFRED_JWT_SECRET", "test-secret-not-used-in-prod-long-enough-for-hs256")
 
+import os
+
+os.environ.pop("VAULT_PATH", None)  # dev machine has a real one; settings load at import time
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -77,3 +81,9 @@ def client(db):
         yield TestClient(app)
     finally:
         app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def _no_ambient_vault(monkeypatch):
+    """The dev machine sets a real VAULT_PATH; tests must not read or write it."""
+    monkeypatch.delenv("VAULT_PATH", raising=False)

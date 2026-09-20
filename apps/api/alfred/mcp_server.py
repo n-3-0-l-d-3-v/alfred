@@ -265,6 +265,34 @@ def get_interview_questions(slug: str, code: str, limit: int = 4, language: str 
     return "\n".join(f"- ({q['key']}) {q['question']}" for q in questions)
 
 
+
+@server.tool(description="List system-design practice scenarios (id, title).")
+def sd_list() -> str:
+    from alfred import sysdesign
+
+    return "\n".join(f"{x['id']}: {x['title']}" for x in sysdesign.list_scenarios())
+
+
+@server.tool(description="System-design Socratic hint. level 0=prompt, 1=clarify, 2=estimate, 3=components, 4=failure modes. Never reveals the reference design.")
+def sd_hint(scenario: str, level: int = 0) -> str:
+    from alfred import sysdesign
+
+    try:
+        return sysdesign.hint(scenario, level)
+    except sysdesign.SysDesignError as e:
+        return f"Error: {e}"
+
+
+@server.tool(description="Submit your written design (80+ words). Returns rubric coverage, what you missed, and only then the reference design (the gate).")
+def sd_review(scenario: str, design: str) -> str:
+    from alfred import sysdesign
+
+    try:
+        return sysdesign.render_review(sysdesign.review(scenario, design))
+    except sysdesign.SysDesignError as e:
+        return f"Gate refused: {e}"
+
+
 def main() -> None:
     server.run(transport="stdio")
 

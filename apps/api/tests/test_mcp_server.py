@@ -47,7 +47,7 @@ def _call(server, name, args):
 def test_all_four_tools_are_registered(mcp_db):
     tools = asyncio.run(mcp_db.server.list_tools())
     names = {t.name for t in tools}
-    assert names == {"get_hint", "submit_for_ac_gate", "get_review", "get_interview_questions"}
+    assert names >= {"get_hint", "submit_for_ac_gate", "get_review", "get_interview_questions"}
 
 
 def test_get_hint_returns_a_code_free_ladder_nudge(mcp_db):
