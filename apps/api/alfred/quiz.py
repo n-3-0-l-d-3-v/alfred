@@ -102,12 +102,19 @@ def start(settings: Settings, mentor: Mentor, topic: str, n: int = 3) -> Quiz:
     return quiz
 
 
+_STOP = {"the", "and", "for", "are", "its", "with", "from", "that", "this", "into", "each", "every", "not", "but", "has", "have", "was", "you"}
+
+
+def _terms(text: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z0-9]{3,}", text.lower()) if w not in _STOP}
+
+
 def keyword_score(reference: str, answer: str) -> int:
     """Offline fallback grader: share of reference keywords present (0/1/2)."""
-    ref = {w for w in re.findall(r"[a-z0-9]{4,}", reference.lower())}
+    ref = _terms(reference)
     if not ref:
         return 0
-    hit = len(ref & set(re.findall(r"[a-z0-9]{4,}", answer.lower()))) / len(ref)
+    hit = len(ref & _terms(answer)) / len(ref)
     return 2 if hit >= 0.6 else 1 if hit >= 0.25 else 0
 
 
