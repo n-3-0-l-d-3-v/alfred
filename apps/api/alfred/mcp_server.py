@@ -309,6 +309,49 @@ def explain_concept(concept: str) -> str:
     return "\n\n".join(parts)
 
 
+@server.tool(description="Start a quiz on a topic, generated only from the learner's own vault notes. Returns a quiz_id and numbered questions (answers hidden).")
+def quiz_start(topic: str, n: int = 3) -> str:
+    from . import quiz
+    from .config import get_settings
+    from .mentor.llm import Mentor
+
+    try:
+        with _quiet():
+            settings = get_settings()
+            q = quiz.start(settings, Mentor(settings), topic, n)
+    except quiz.QuizError as e:
+        return f"Error: {e}"
+    lines = [f"quiz_id: {q.id}"] + [f"{i}. {x.question} (from: {x.source_note})" for i, x in enumerate(q.questions)]
+    return chr(10).join(lines)
+
+
+@server.tool(description="Answer question `index` of a quiz; returns score (0-2), feedback and the reference answer.")
+def quiz_answer(quiz_id: str, index: int, answer: str) -> str:
+    from . import quiz
+    from .config import get_settings
+    from .mentor.llm import Mentor
+
+    try:
+        with _quiet():
+            q = quiz.load(quiz_id)
+            res = quiz.answer(Mentor(get_settings()), q, index, answer)
+    except quiz.QuizError as e:
+        return f"Error: {e}"
+    return f"score {res.score}/2. {res.feedback} Reference: {res.answer}"
+
+
+@server.tool(description="Finish a quiz: records mastery and schedules the next spaced review in the vault.")
+def quiz_finish(quiz_id: str) -> str:
+    from . import quiz
+    from .config import get_settings
+
+    try:
+        r = quiz.finish(get_settings(), quiz.load(quiz_id))
+    except quiz.QuizError as e:
+        return f"Error: {e}"
+    return f"mastery {int(r['mastery'] * 100)}%, next review {r['next_due']} (in {r['interval_days']} days)"
+
+
 def main() -> None:
     server.run(transport="stdio")
 

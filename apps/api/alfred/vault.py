@@ -141,6 +141,7 @@ def write_progress_note(
     streak_days: int,
     mastery: float,
     next_due: date,
+    extra: dict | None = None,
 ) -> Path | None:
     """Write one Markdown-with-frontmatter progress note per (user, archetype)
     pair to ``<VAULT_PATH>/Alfred/``, overwriting the previous note for that
@@ -166,6 +167,7 @@ def write_progress_note(
             f"mastery: {mastery:.2f}",
             f"next_due: {next_due.isoformat()}",
             f"updated: {date.today().isoformat()}",
+            *(f"{k}: {v}" for k, v in (extra or {}).items()),
             "---",
             "",
         ]

@@ -62,7 +62,31 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--reload", action="store_true", help="Auto-reload on source changes (dev only).")
     parser.add_argument("--explain", metavar="CONCEPT", help="Explain a concept using your vault notes (local model) and exit.")
+    parser.add_argument("--quiz", metavar="TOPIC", help="Interactive quiz on TOPIC from your own vault notes.")
     args = parser.parse_args(argv)
+
+    if args.quiz:
+        from . import quiz
+        from .config import get_settings
+        from .mentor.llm import Mentor
+
+        settings = get_settings()
+        mentor = Mentor(settings)
+        try:
+            q = quiz.start(settings, mentor, args.quiz)
+        except quiz.QuizError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+        for i, item in enumerate(q.questions):
+            print(f"Q{i + 1} ({item.source_note}): {item.question}")
+            reply = input("> ")
+            res = quiz.answer(mentor, q, i, reply)
+            print(f"  {res.score}/2  {res.feedback}")
+            print(f"  reference: {res.answer}")
+            print()
+        r = quiz.finish(settings, q)
+        print(f"Mastery {int(r['mastery'] * 100)}%. Next review: {r['next_due']} (in {r['interval_days']} days).")
+        return 0
 
     if args.health:
         return _run_health_check()
