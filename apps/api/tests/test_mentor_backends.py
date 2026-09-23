@@ -79,3 +79,10 @@ def test_explain_ignores_other_agents_output(monkeypatch, tmp_path):
     m = Mentor(_settings(vault_path=str(tmp_path)))
     monkeypatch.setattr(m, "_complete_json", lambda *a, **k: {"explanation": "x", "check_question": "y"})
     assert m.explain("hash map")["notes_used"] == []
+
+
+def test_ollama_ctx_grows_only_when_prompt_needs_it():
+    from alfred.mentor.llm import _ollama_ctx
+    assert _ollama_ctx(2000, 600) == {}
+    assert _ollama_ctx(14000, 600) == {"num_ctx": 8192}
+    assert _ollama_ctx(10**7, 600) == {"num_ctx": 32768}

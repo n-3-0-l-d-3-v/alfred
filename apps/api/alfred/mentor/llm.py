@@ -63,6 +63,20 @@ _EXPLAIN_SCHEMA = {
 }
 
 
+_OLLAMA_DEFAULT_CTX = 4096
+
+
+def _ollama_ctx(text_chars: int, reply_tokens: int) -> dict:
+    """Ollama silently drops the START of a prompt that overflows its 4096-token
+    default window (the system prompt with the AC-gate rules). Grow num_ctx only
+    when this prompt needs it (~3.5 chars/token, conservative)."""
+    need = int(text_chars / 3.5) + reply_tokens
+    ctx = _OLLAMA_DEFAULT_CTX
+    while ctx < need and ctx < 32768:
+        ctx *= 2
+    return {"num_ctx": ctx} if ctx > _OLLAMA_DEFAULT_CTX else {}
+
+
 def _ollama_reachable(host: str) -> bool:
     try:
         with urllib.request.urlopen(f"{host}/api/tags", timeout=2) as r:
@@ -104,7 +118,8 @@ class Mentor:
                     "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
                     "format": schema,
                     "stream": False,
-                    "options": {"temperature": 0.3, "num_predict": max_tokens * 2},
+                    "options": {"temperature": 0.3, "num_predict": max_tokens * 2,
+                                **_ollama_ctx(len(system) + len(user), max_tokens * 2)},
                 }).encode("utf-8")
                 req = urllib.request.Request(
                     f"{self._settings.ollama_host}/api/chat", data=body,
