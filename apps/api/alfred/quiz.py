@@ -125,6 +125,10 @@ def answer(mentor: Mentor, quiz: Quiz, index: int, text: str) -> Question:
             _GRADE_SCHEMA, max_tokens=200)
     if data and data.get("score") in (0, 1, 2):
         q.score, q.feedback = int(data["score"]), str(data.get("feedback", "")).strip()
+        # Small local models under-credit correct answers that add detail; an
+        # answer containing the reference's key terms gets full marks.
+        if q.score < 2 and keyword_score(q.answer, text) == 2:
+            q.score, q.feedback = 2, q.feedback + " (Counted correct: your answer covers the reference's key points.)"
     else:
         q.score = keyword_score(q.answer, text)
         q.feedback = "graded offline by keyword overlap"

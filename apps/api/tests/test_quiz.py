@@ -79,3 +79,11 @@ def test_finish_writes_due_date_and_grows_interval_next_time(tmp_path):
 def test_keyword_score():
     assert quiz.keyword_score("hash map constant lookup", "hash map gives constant lookup") == 2
     assert quiz.keyword_score("hash map constant lookup", "") == 0
+
+
+def test_keyword_floor_overrides_stingy_model(tmp_path):
+    s = _settings(_vault(tmp_path))
+    m = FakeMentor([{"questions": [{"question": "q", "answer": "RDB and AOF", "source_note": "redis persistence"}]},
+                    {"score": 1, "feedback": "too detailed"}])
+    q = quiz.start(s, m, "redis persistence")
+    assert quiz.answer(m, q, 0, "RDB snapshots and AOF logs").score == 2
