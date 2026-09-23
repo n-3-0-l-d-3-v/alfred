@@ -11,7 +11,8 @@ os.environ.setdefault("ALFRED_JWT_SECRET", "test-secret-not-used-in-prod-long-en
 
 import os
 
-os.environ.pop("VAULT_PATH", None)  # dev machine has a real one; settings load at import time
+os.environ.pop("VAULT_PATH", None)
+os.environ["ALFRED_LLM_BACKEND"] = "off"  # never hit a real local model from tests  # dev machine has a real one; settings load at import time
 
 import pytest
 from sqlalchemy import create_engine

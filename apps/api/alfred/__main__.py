@@ -61,10 +61,30 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--reload", action="store_true", help="Auto-reload on source changes (dev only).")
+    parser.add_argument("--explain", metavar="CONCEPT", help="Explain a concept using your vault notes (local model) and exit.")
     args = parser.parse_args(argv)
 
     if args.health:
         return _run_health_check()
+    if args.explain:
+        from .config import get_settings
+        from .mentor.llm import Mentor
+
+        result = Mentor(get_settings()).explain(args.explain)
+        if result is None:
+            print("No model backend available (start Ollama or set ALFRED_LLM_BACKEND).", file=sys.stderr)
+            return 1
+        print(result["explanation"])
+        print()
+        if result["builds_on"]:
+            print("Builds on your notes: " + ", ".join(result["builds_on"]))
+        elif result["notes_used"]:
+            print("Your related notes (read, not cited): " + ", ".join(result["notes_used"]))
+        else:
+            print("No related notes in your vault yet.")
+        print()
+        print("Check yourself: " + result["check_question"])
+        return 0
 
     import uvicorn
 

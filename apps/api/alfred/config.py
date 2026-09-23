@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     opus_model: str = "claude-opus-4-8"      # deep review, card generation
     haiku_model: str = "claude-haiku-4-5"    # cheap personalized nudges, classification
+    # Which model backend powers the optional LLM paths:
+    #   auto      -> local Ollama if reachable, else Anthropic if a key is set, else offline
+    #   ollama    -> local only (free, private)   anthropic -> paid API   off -> offline only
+    llm_backend: str = "auto"
+    ollama_host: str = "http://127.0.0.1:11434"
+    ollama_model: str = "qwen2.5:7b"
 
     # --- cap limits (the cost fence) ---
     # Card hints are DB reads (~free), so their cap only exists to stop abuse.

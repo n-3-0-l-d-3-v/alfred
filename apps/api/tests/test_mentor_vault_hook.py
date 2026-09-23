@@ -50,6 +50,7 @@ def _mentor_with_fake_client(vault_path: str | None) -> tuple[Mentor, _Recording
     mentor = Mentor(settings)
     fake_messages = _RecordingMessages()
     mentor._client = SimpleNamespace(messages=fake_messages)  # bypass the real anthropic client
+    mentor.backend = "anthropic"
     return mentor, fake_messages
 
 

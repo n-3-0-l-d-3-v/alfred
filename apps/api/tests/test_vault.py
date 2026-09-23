@@ -115,3 +115,17 @@ def test_write_progress_note_overwrites_the_same_user_archetype_pair(tmp_path):
     )
     assert first == second
     assert "streak_days: 2" in second.read_text(encoding="utf-8")
+
+
+def test_ranking_prefers_title_hits_and_whole_words(tmp_path):
+    from alfred.config import Settings
+    from alfred import vault
+
+    (tmp_path / "a-consistent-hashing.md").write_text("hashing rings for maps", encoding="utf-8")
+    (tmp_path / "hash-map.md").write_text("A hash map gives O(1) lookup.", encoding="utf-8")
+    (tmp_path / "misc.md").write_text("we changed the map colours", encoding="utf-8")
+    (tmp_path / "two-pointer-pattern.md").write_text("left and right pointer", encoding="utf-8")
+    s = Settings(jwt_secret="x" * 32, vault_path=str(tmp_path))
+    assert [n.title for n in vault.find_relevant_notes(s, "hash map")][0] == "hash map"
+    assert "a consistent hashing" not in [n.title for n in vault.find_relevant_notes(s, "hash map")]
+    assert [n.title for n in vault.find_relevant_notes(s, "two pointers")][0] == "two pointer pattern"

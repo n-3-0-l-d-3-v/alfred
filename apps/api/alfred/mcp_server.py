@@ -293,6 +293,22 @@ def sd_review(scenario: str, design: str) -> str:
         return f"Gate refused: {e}"
 
 
+@server.tool(description="Explain a CS concept, building on the learner's own vault notes (local model, free). Returns the explanation, which notes it built on, and a check-your-understanding question.")
+def explain_concept(concept: str) -> str:
+    from .config import get_settings
+    from .mentor.llm import Mentor
+
+    with _quiet():
+        result = Mentor(get_settings()).explain(concept)
+    if result is None:
+        return "No model backend available (start Ollama or set ALFRED_LLM_BACKEND)."
+    parts = [result["explanation"]]
+    if result["builds_on"]:
+        parts.append("Builds on your notes: " + ", ".join(result["builds_on"]))
+    parts.append("Check yourself: " + result["check_question"])
+    return "\n\n".join(parts)
+
+
 def main() -> None:
     server.run(transport="stdio")
 

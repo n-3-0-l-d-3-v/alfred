@@ -83,6 +83,7 @@ def build_health_payload(
         # / legacy LEETLEARN_ANTHROPIC_API_KEY) — never a shared pool. See
         # agent.yaml and README "Personal-token guarantee".
         "llm_configured": bool(settings.anthropic_api_key),
+        "llm_backend_setting": settings.llm_backend,
         # Only "card" and "llm" are ever written to hint_events.source today
         # (see mentor/service.py); llm_reviews_per_day is a configured cap
         # with no dedicated source yet, so it is reported as a limit only.

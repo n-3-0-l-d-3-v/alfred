@@ -74,21 +74,53 @@ def find_relevant_notes(settings: Settings, concept: str, *, limit: int = 3) -> 
     if not terms:
         return []
 
-    matches: list[VaultNote] = []
-    for md_path in sorted(read_dir.rglob("*.md")):
-        if "agents" in md_path.relative_to(root).parts or ".git" in md_path.parts:
+    # Rank instead of first-hit: a note scores for each distinct concept term
+    # it contains, filename/title hits weigh 3x (a note *about* the thing beats
+    # one that mentions it in passing), and generic words are ignored so
+    # "change" or "problem" alone can't pull in unrelated notes.
+    terms = {t for t in terms if t not in _STOPWORDS}
+    # crude singularize so "pointers" also matches a note titled "pointer"
+    terms = {t[:-1] if len(t) > 4 and t.endswith("s") and not t.endswith("ss") else t for t in terms}
+    if not terms:
+        return []
+    min_score = 2 if len(terms) > 1 else 1
+    # whole words only (optionally plural) so "hash" doesn't match "hashing"
+    patterns = {t: re.compile(r"(?<![a-z0-9])" + re.escape(t) + r"(?:s|es)?(?![a-z0-9])") for t in terms}
+    phrase = " ".join(w for w in concept.lower().replace("_", " ").replace("-", " ").split() if w not in _STOPWORDS)
+    scored: list[tuple[int, str, VaultNote]] = []
+    for md_path in read_dir.rglob("*.md"):
+        rel = md_path.relative_to(root).parts
+        if "agents" in rel or ".git" in rel or md_path.name.lower() in _SKIP_FILES:
             continue
         try:
             text = md_path.read_text(encoding="utf-8")
-        except OSError:
+        except (OSError, UnicodeDecodeError):
             continue
-        haystack = f"{md_path.stem}\n{text}".lower().replace("_", " ").replace("-", " ")
-        if any(term in haystack for term in terms):
-            title = md_path.stem.replace("-", " ").replace("_", " ")
-            matches.append(VaultNote(path=md_path, title=title, content=text))
-            if len(matches) >= limit:
-                break
-    return matches
+        title = md_path.stem.replace("-", " ").replace("_", " ").lower()
+        body = text.lower().replace("_", " ").replace("-", " ")
+        score = 0
+        for t, rx in patterns.items():
+            if rx.search(title):
+                score += 3
+            elif rx.search(body):
+                score += 1
+        if phrase and len(terms) > 1:
+            if phrase in title:
+                score += 4
+            elif phrase in body:
+                score += 2
+        if score >= min_score:
+            scored.append((score, str(md_path), VaultNote(path=md_path, title=title, content=text)))
+    scored.sort(key=lambda x: (-x[0], x[1]))
+    return [n for _, _, n in scored[:limit]]
+
+
+_STOPWORDS = {
+    "the", "and", "for", "with", "how", "what", "why", "does", "this", "that", "from", "into",
+    "explain", "problem", "problems", "solution", "change", "using", "use", "about", "work", "works",
+    "question", "questions", "concept", "concepts", "basics", "intro", "introduction", "notes",
+}
+_SKIP_FILES = {"readme.md", "index.md"}
 
 
 def notes_as_context(notes: list[VaultNote], *, max_chars: int = 1500) -> str:
