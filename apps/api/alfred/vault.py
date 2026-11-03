@@ -144,7 +144,7 @@ def write_progress_note(
     extra: dict | None = None,
 ) -> Path | None:
     """Write one Markdown-with-frontmatter progress note per (user, archetype)
-    pair to ``<VAULT_PATH>/Alfred/``, overwriting the previous note for that
+    pair to ``<VAULT_PATH>/agents/Alfred/``, overwriting the previous note for that
     pair. Returns the written path, or `None` (no filesystem access at all)
     when ``VAULT_PATH`` is unset.
     """
